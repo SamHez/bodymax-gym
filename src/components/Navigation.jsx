@@ -72,35 +72,41 @@ export function Sidebar({ activeTab, user, onLogout }) {
                 })}
             </nav>
 
-            {/* Tools & Persistence */}
-            <div className="p-8 space-y-6">
-                <button
-                    onClick={toggleTheme}
-                    className="w-full flex items-center justify-between p-5 bg-surface rounded-3xl border border-text/5 text-text/40 hover:text-accent transition-all group"
-                >
-                    <span className="text-[10px] font-bold uppercase tracking-widest">Active Look</span>
-                    {theme === 'light' ? <Sun size={20} /> : <Moon size={20} />}
-                </button>
-
-                <div className="bg-surface/50 p-6 rounded-[2.5rem] border border-text/5">
-                    <div className="flex items-center gap-4 mb-6">
-                        <div className="w-12 h-12 rounded-2xl bg-primary text-white flex items-center justify-center font-bold text-lg">
-                            {user?.email?.[0].toUpperCase()}
-                        </div>
-                        <div>
-                            <p className="text-text font-bold text-sm tracking-tight">{user?.role === 'manager' ? 'Admin Manager' : 'Front Desk'}</p>
-                            <p className="text-text/30 text-[9px] font-bold uppercase tracking-tighter truncate max-w-[120px]">{user?.email}</p>
-                        </div>
-                    </div>
-                    <button
-                        onClick={onLogout}
-                        className="w-full flex items-center justify-center gap-3 py-4 bg-white dark:bg-card border border-text/5 hover:bg-error/5 hover:text-error hover:border-error/20 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all"
-                    >
-                        <LogOut size={16} /> Sign Out
-                    </button>
-                </div>
-            </div>
+            {/* Tools & Persistence - MOVED TO TOPNAV */}
         </aside>
+    );
+}
+
+export function TopNav({ user, onLogout }) {
+    const { theme, toggleTheme } = useTheme();
+
+    return (
+        <header className="sticky top-0 z-40 bg-surface/80 backdrop-blur-md border-b border-text/5 px-6 py-4 flex items-center justify-end gap-6 transition-all">
+            <button
+                onClick={toggleTheme}
+                className="p-3 bg-card border border-text/5 rounded-2xl shadow-premium text-text/40 hover:text-accent transition-all"
+            >
+                {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+            </button>
+
+            <div className="flex items-center gap-4 bg-card pl-4 pr-2 py-2 rounded-full border border-text/5 shadow-premium">
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs">
+                        {user?.email?.[0].toUpperCase()}
+                    </div>
+                    <div className="hidden md:block">
+                        <p className="text-text font-bold text-xs tracking-tight">{user?.role === 'manager' ? 'Admin Manager' : 'Front Desk'}</p>
+                    </div>
+                </div>
+                <button
+                    onClick={onLogout}
+                    className="p-2 bg-error/5 text-error hover:bg-error hover:text-white rounded-full transition-all"
+                    title="Sign Out"
+                >
+                    <LogOut size={16} />
+                </button>
+            </div>
+        </header>
     );
 }
 

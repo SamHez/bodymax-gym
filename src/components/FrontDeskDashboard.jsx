@@ -4,6 +4,7 @@ import { Users, UserPlus, Calendar, Activity, CheckCircle2, TrendingUp, Search, 
 import { cn } from '../lib/utils';
 
 import { useAttendance, useMembers, useFinance } from '../lib/data-hooks';
+import { supabase } from '../lib/supabase';
 
 export function FrontDeskDashboard({ onNavigate }) {
     const { todayCount, checkIn, removeCheckIn, checkedInIds, loading: attendanceLoading } = useAttendance();
@@ -37,6 +38,71 @@ export function FrontDeskDashboard({ onNavigate }) {
         }
     };
 
+    const generateDemoData = async () => {
+        const confirm = window.confirm("Generate random payment data for the last 7 days?");
+        if (!confirm) return;
+
+        try {
+            // Get a valid member ID
+            const { data: member } = await supabase.from('members').select('id').limit(1).single();
+            if (!member) {
+                alert("No members found. Create a member first.");
+                return;
+            }
+
+
+            // 1. Clear existing payments to prevent accumulation
+            // Retrieve all IDs first to ensure robust deletion (sometimes bulk delete is restricted)
+            const { data: existingData } = await supabase.from('payments').select('id');
+            if (existingData && existingData.length > 0) {
+                const ids = existingData.map(d => d.id);
+                const { error: deleteError } = await supabase
+                    .from('payments')
+                    .delete()
+                    .in('id', ids);
+
+                if (deleteError) {
+                    console.error("Error clearing payments:", deleteError);
+                    alert("Warning: Could not clear previous data. Check console/permissions.");
+                }
+            }
+
+            const payments = [];
+            for (let i = 0; i < 7; i++) {
+                // Generate 2-5 transactions per day to keep total realistic
+                const transactionsCount = Math.floor(Math.random() * 4) + 2;
+
+                for (let j = 0; j < transactionsCount; j++) {
+                    const date = new Date();
+                    date.setDate(date.getDate() - i);
+                    // Randomize time within the day (8 AM to 8 PM)
+                    date.setHours(Math.floor(Math.random() * 13) + 8);
+                    date.setMinutes(Math.floor(Math.random() * 60));
+                    date.setSeconds(0);
+
+                    // Random amount between 2k and 12k (matches realistic gym fees/products)
+                    const amount = Math.floor(Math.random() * (12000 - 2000 + 1)) + 2000;
+
+                    payments.push({
+                        member_id: member.id,
+                        amount: amount,
+                        payment_method: Math.random() > 0.4 ? 'Mobile Money' : 'Cash',
+                        transaction_date: date.toISOString()
+                    });
+                }
+            }
+
+            const { error } = await supabase.from('payments').insert(payments);
+            if (error) throw error;
+
+            alert("Demo data generated! Reloading...");
+            window.location.reload();
+        } catch (error) {
+            console.error("Demo Data Error:", error);
+            alert("Failed to generate data.");
+        }
+    };
+
     const quickStats = [
         { label: "Today's Attendance", value: todayCount.toString(), icon: Users, trend: 0 },
         { label: "Total Members", value: members.length.toString(), icon: UserPlus, trend: 0 },
@@ -61,6 +127,13 @@ export function FrontDeskDashboard({ onNavigate }) {
                 </div>
 
                 <div className="flex gap-4">
+                    <button
+                        onClick={generateDemoData}
+                        className="hidden flex items-center gap-2 bg-text/5 text-text px-4 py-4 rounded-3xl font-bold uppercase tracking-widest text-[10px] hover:bg-text/10 transition-all"
+                        title="Populate Chart"
+                    >
+                        <Activity size={16} /> Demo Data
+                    </button>
                     <button
                         onClick={() => onNavigate('attendance')}
                         className="flex items-center gap-3 bg-primary text-surface px-6 py-4 rounded-3xl font-bold uppercase tracking-widest text-xs hover:scale-105 active:scale-95 transition-all shadow-premium"
@@ -87,43 +160,31 @@ export function FrontDeskDashboard({ onNavigate }) {
 
             {/* Main Action Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                {/* Activity Stream */}
-                <Card subtitle="Instant Timeline" title="Recent Activity">
-                    <div className="mt-6 space-y-4">
-                        {isSyncing ? (
-                            <div className="py-10 text-center text-text/10 font-bold uppercase tracking-[0.5em] animate-pulse">
-                                Syncing Timeline...
-                            </div>
-                        ) : recentActivity.length === 0 ? (
-                            <div className="py-10 text-center text-text/10 font-bold uppercase tracking-[0.2em]">
-                                No Recent Tactical Activity
-                            </div>
-                        ) : recentActivity.map((item) => (
-                            <div key={item.id} className="group flex items-center justify-between p-4 bg-text/[0.02] border border-text/5 rounded-3xl hover:bg-surface transition-all">
-                                <div className="flex items-center gap-4">
-                                    <div className={cn(
-                                        "w-12 h-12 rounded-2xl flex items-center justify-center",
-                                        item.type === 'attendance' ? "bg-primary/10 text-primary" :
-                                            item.type === 'payment' ? "bg-accent/10 text-accent" : "bg-success/10 text-success"
-                                    )}>
-                                        {item.type === 'attendance' ? <Activity size={20} /> : <TrendingUp size={20} />}
+                {/* Daily Revenue Velocity Chart */}
+                <Card subtitle="Revenue Velocity" title="Last 7 Days">
+                    <div className="h-48 flex items-end justify-between gap-3 pt-8 px-4">
+                        {(() => {
+                            const data = financeStats.dailyData || new Array(7).fill({ day: '-', revenue: 0 });
+                            const maxRev = Math.max(...data.map(d => d.revenue), 10); // Min 10k scale prevents flat bars
+                            return data.map((item, i) => (
+                                <div key={i} className="flex-1 flex flex-col items-center gap-4 h-full justify-end">
+                                    <div
+                                        className={cn(
+                                            "w-full rounded-2xl transition-all duration-[1500ms] relative group min-h-[4px]",
+                                            i === data.length - 1 ? "bg-accent shadow-gold" : "bg-primary/30"
+                                        )}
+                                        style={{ height: `${(item.revenue / maxRev) * 100}%` }}
+                                    >
+                                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-surface text-text border border-text/10 text-[9px] font-bold px-2 py-1 rounded-lg shadow-sm whitespace-nowrap z-20">
+                                            {Math.round(item.revenue)}k
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="text-text font-bold text-sm uppercase">{item.name}</p>
-                                        <p className="text-text/40 text-[10px] font-bold uppercase tracking-widest">{item.action}</p>
-                                    </div>
+                                    <span className={cn("text-[9px] font-bold uppercase", i === data.length - 1 ? "text-accent" : "text-text/30")}>
+                                        {item.day}
+                                    </span>
                                 </div>
-                                <div className="text-right">
-                                    <p className="text-text/60 font-bold text-xs">{item.time}</p>
-                                    <div className="flex gap-1 justify-end mt-1">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                        <button className="w-full py-4 text-[10px] font-bold uppercase tracking-[0.3em] text-text/20 hover:text-accent transition-colors">
-                            View Detailed Logs
-                        </button>
+                            ));
+                        })()}
                     </div>
                 </Card>
 

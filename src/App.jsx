@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Login } from './components/Login';
-import { Sidebar, MobileHeader } from './components/Navigation';
+import { Sidebar, MobileHeader, TopNav } from './components/Navigation';
 import { BottomNav } from './components/BottomNav';
 import { DashboardSnapshot } from './components/DashboardSnapshot';
 import { MembershipRegistration } from './components/MembershipRegistration';
@@ -127,8 +127,11 @@ function App() {
             <div className="fixed top-[-10%] right-[-10%] w-[500px] h-[500px] bg-primary/[0.03] dark:bg-primary/[0.08] rounded-full blur-[100px] pointer-events-none transition-all" />
             <div className="fixed bottom-[-5%] left-[5%] w-[400px] h-[400px] bg-accent/[0.04] dark:bg-accent/[0.1] rounded-full blur-[80px] pointer-events-none transition-all" />
             <MobileHeader user={user} onLogout={handleLogout} />
+            <div className="hidden lg:block">
+              <TopNav user={user} onLogout={handleLogout} />
+            </div>
             <main className={cn(
-              "flex-1 px-6 pt-32 pb-40 lg:pt-16 lg:pb-16 max-w-[1400px] mx-auto w-full relative z-10",
+              "flex-1 px-6 pt-32 pb-40 lg:pt-6 lg:pb-16 max-w-[1400px] mx-auto w-full relative z-10",
               "animate-in fade-in duration-700"
             )}>
               <Routes>

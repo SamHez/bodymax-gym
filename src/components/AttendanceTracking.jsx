@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Card } from './Card';
-import { UserCheck, Search, CheckCircle2, QrCode, ShieldAlert } from 'lucide-react';
+import { UserCheck, Search, CheckCircle2, QrCode, ShieldAlert, Ticket } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { supabase } from '../lib/supabase';
 
 import { useMembers, useAttendance } from '../lib/data-hooks';
 
@@ -23,6 +24,35 @@ export function AttendanceTracking() {
         await removeCheckIn(id);
     };
 
+    const handleDailyPass = async () => {
+        const name = prompt("Enter Guest Name (Optional):") || "Daily Pass Guest";
+        try {
+            // 1. Create a temporary member record
+            const { data: member, error: memberError } = await supabase
+                .from('members')
+                .insert([{
+                    full_name: name,
+                    category: 'Daily Pass',
+                    duration: 'Daily',
+                    start_date: new Date().toISOString().split('T')[0],
+                    expiry_date: new Date().toISOString().split('T')[0], // Expires today
+                    status: 'Active'
+                }])
+                .select()
+                .single();
+
+            if (memberError) throw memberError;
+
+            // 2. Check them in
+            await checkIn(member.id);
+            alert(`Daily Pass issued for ${name}`);
+            window.location.reload(); // Simple reload to refresh the list
+        } catch (error) {
+            console.error("Daily Pass Error:", error);
+            alert("Failed to issue Daily Pass.");
+        }
+    };
+
     return (
         <div className="space-y-10 max-w-5xl mx-auto">
             {/* Real-time Counter Header */}
@@ -41,6 +71,13 @@ export function AttendanceTracking() {
                         <p className="md:hidden text-text/20 text-[8px] font-bold uppercase tracking-[0.2em] mt-1">Today</p>
                     </div>
                     <div className="w-[1px] h-12 md:h-20 bg-text/5" />
+                    <button
+                        onClick={handleDailyPass}
+                        className="p-4 md:p-6 bg-surface hover:bg-accent/10 hover:text-accent rounded-2xl md:rounded-[2rem] border border-text/5 transition-all active:scale-90 shadow-sm group/dp"
+                        title="Log Daily Pass"
+                    >
+                        <Ticket size={24} className="md:w-8 md:h-8 group-hover/dp:scale-110 transition-transform" />
+                    </button>
                     <button className="p-4 md:p-6 bg-surface hover:bg-accent/10 hover:text-accent rounded-2xl md:rounded-[2rem] border border-text/5 transition-all active:scale-90 shadow-sm group/qr">
                         <QrCode size={24} className="md:w-8 md:h-8 group-hover/qr:scale-110 transition-transform" />
                     </button>

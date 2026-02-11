@@ -142,12 +142,34 @@ export function useFinance() {
                     .filter(p => p.payment_method === 'Cash')
                     .reduce((sum, p) => sum + Number(p.amount), 0);
 
+                // Calculate daily stats for the last 7 days
+                const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                const dailyData = new Array(7).fill(0).map((_, i) => {
+                    const date = new Date();
+                    date.setDate(date.getDate() - (6 - i)); // Go back 6 days to today
+                    const dayIndex = date.getDay();
+                    const dayDate = date.toISOString().split('T')[0];
+
+                    const dayRevenue = data
+                        .filter(p => {
+                            if (!p.transaction_date) return false;
+                            return p.transaction_date.startsWith(dayDate);
+                        })
+                        .reduce((sum, p) => sum + Number(p.amount), 0);
+
+                    return {
+                        day: days[dayIndex],
+                        revenue: dayRevenue / 1000 // In 'k'
+                    };
+                });
+
                 setStats({
                     revenue: total,
                     transactions: data.length,
                     monthlyData,
                     mobileRevenue,
-                    cashRevenue
+                    cashRevenue,
+                    dailyData
                 });
             }
             setLoading(false);
