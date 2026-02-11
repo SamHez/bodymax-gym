@@ -24,7 +24,21 @@ export function useMembers() {
         fetchMembers();
     }, []);
 
-    return { members, loading };
+    const deleteMember = async (id) => {
+        const { error } = await supabase
+            .from('members')
+            .delete()
+            .eq('id', id);
+
+        if (!error) {
+            setMembers(prev => prev.filter(m => m.id !== id));
+            return true;
+        }
+        console.error("Error deleting member:", error);
+        return false;
+    };
+
+    return { members, loading, deleteMember };
 }
 
 export function useAttendance() {

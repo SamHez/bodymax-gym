@@ -39,8 +39,8 @@ export function Sidebar({ activeTab, user, onLogout }) {
             {/* Brand Header */}
             <div className="p-10 pb-12">
                 <div className="flex items-center gap-4 mb-2">
-                    <img src={logo} alt="Infinity Gym" className="h-10 w-auto" />
-                    <h2 className="text-text font-bold text-1xl tracking-tighter">INFINITY GYM</h2>
+                    <img src={logo} alt="BodyMax Gym" className="h-10 w-auto" />
+                    <h2 className="text-text font-bold text-1xl tracking-tighter">BODYMAX GYM</h2>
                 </div>
                 <p className="hidden text-accent text-[10px] font-bold uppercase tracking-[0.4em] ml-1">Gym Suite</p>
             </div>
@@ -111,9 +111,9 @@ export function MobileHeader({ user, onLogout }) {
     return (
         <header className="fixed lg:hidden top-0 left-0 right-0 h-24 bg-surface/80 backdrop-blur-2xl border-b border-text/5 z-[60] px-6 flex justify-between items-center transition-all">
             <div className="flex items-center gap-3">
-                <img src={logo} alt="Infinity Gym" className="h-8 w-auto" />
+                <img src={logo} alt="BodyMax Gym" className="h-8 w-auto" />
                 <div className="h-5 w-[2px] bg-text/5" />
-                <h1 className="text-text font-bold text-lg tracking-tighter uppercase ">Infinity</h1>
+                <h1 className="text-text font-bold text-lg tracking-tighter uppercase ">BodyMax</h1>
             </div>
 
             <div className="flex items-center gap-4">

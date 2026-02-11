@@ -7,18 +7,18 @@
 -- Insert Profiles for the users you created in Auth
 -- Example for Manager
 insert into public.profiles (id, role) 
-values ('325649cc-2336-411c-ac77-76b1b64de522', 'Manager');
+values ('ac3289d3-9cbc-4ece-81f0-09ef92991541', 'Manager');
 
 -- Example for Receptionist
 insert into public.profiles (id, role) 
-values ('815a4765-4d8c-49c8-a1e4-df1fc26a04e4', 'Receptionist');
+values ('903ffe97-33d7-4843-a9d9-21f5a21c6251', 'Receptionist');
 
 -- Seed Sample Members
 insert into public.members (full_name, category, duration, start_date, expiry_date, status)
 values 
-('Alice Umutoni', 'Student', 'Monthly', current_date, current_date + interval '1 month', 'Active'),
+('Alice Umutoni', 'Normal Membership', 'Monthly', current_date, current_date + interval '1 month', 'Active'),
 ('Bob Smith', 'Normal Membership', 'Monthly', current_date - interval '25 days', current_date + interval '5 days', 'Expiring Soon'),
-('Charlie Kim', 'Hotel Resident', 'Weekly', current_date, current_date + interval '7 days', 'Active'),
+('Charlie Kim', 'Normal Membership', 'Weekly', current_date, current_date + interval '7 days', 'Active'),
 ('David Murenzi', 'Normal Membership', 'Monthly', current_date - interval '40 days', current_date - interval '10 days', 'Expired');
 
 -- Seed Sample Payments

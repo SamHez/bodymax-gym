@@ -1,4 +1,4 @@
--- Infinity Hotel Gym Database Schema
+-- BodyMax Gym Database Schema
 
 -- Enable UUID extension
 create extension if not exists "uuid-ossp";
@@ -9,7 +9,7 @@ create table public.members (
     full_name text not null,
     phone text,
     email text,
-    category text not null check (category in ('Student', 'Hotel Resident', 'Group Membership', 'Normal Membership', 'Daily Pass')),
+    category text not null check (category in ('Group Membership', 'Normal Membership', 'Daily Pass')),
     duration text check (duration in ('Weekly', 'Monthly', '3 Months', 'Annual')),
     start_date date not null default current_date,
     expiry_date date not null,

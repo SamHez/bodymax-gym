@@ -32,7 +32,7 @@ export function AttendanceTracking() {
                 </div>
                 <div className="z-10">
                     <h2 className="text-accent text-[9px] md:text-[11px] font-bold uppercase tracking-[0.5em] mb-2 leading-none ">Asset Presence</h2>
-                    <p className="text-text text-2xl md:text-5xl font-bold tracking-tighter leading-none uppercase">CHECK-IN</p>
+                    <p className="text-text text-2xl md:text-4xl font-bold tracking-tighter leading-none uppercase">CHECK-IN</p>
                 </div>
                 <div className="flex items-center gap-4 md:gap-10 z-10">
                     <div className="text-right">

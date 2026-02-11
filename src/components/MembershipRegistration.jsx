@@ -15,7 +15,7 @@ export function MembershipRegistration({ onComplete }) {
 
     const categories = [
         { name: 'Student', price: 20000, desc: 'ALU / CMU Restricted' },
-        { name: 'Hotel Resident', price: 10000, desc: 'Infinity Guest Privileges' },
+        { name: 'Hotel Resident', price: 10000, desc: 'BodyMax Guest Privileges' },
         { name: 'Normal Membership', price: 30000, desc: 'Comprehensive Gym Access' },
         { name: 'Group Membership', price: 20000, desc: 'Corporate / Linked Tier' },
     ];

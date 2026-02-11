@@ -61,10 +61,10 @@ export function Login({ onLogin }) {
             <div className="w-full max-w-md z-10 space-y-10 animate-in fade-in slide-in-from-bottom-8 duration-700">
                 <div className="text-center">
                     <div className="inline-block p-4 bg-card rounded-3xl shadow-premium mb-8 border border-text/5">
-                        <img src={logo} alt="Infinity Gym" className="h-14 w-auto" />
+                        <img src={logo} alt="BodyMax Gym" className="h-14 w-auto" />
                     </div>
                     <h1 className="text-4xl font-black tracking-tight text-text mb-2 font-sans">
-                        INFINITY <span className="text-accent">GYM</span>
+                        BODYMAX <span className="text-accent">GYM</span>
                     </h1>
                     <p className="text-text/40 font-bold uppercase tracking-[0.3em] text-[10px]">Management Suite</p>
                 </div>
@@ -82,7 +82,7 @@ export function Login({ onLogin }) {
                             <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-text/30 group-focus-within:text-accent transition-colors" size={20} />
                             <input
                                 type="email"
-                                placeholder="manager@infinityhotel.rw"
+                                placeholder="manager@bodymaxgym.rw"
                                 className="glass-input w-full py-5 pl-14 pr-4 rounded-2xl font-bold"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
@@ -123,7 +123,7 @@ export function Login({ onLogin }) {
 
                 <div className="pt-10 text-center">
                     <p className="text-text/20 text-[10px] font-black uppercase tracking-[0.3em]">
-                        Infinity Hotel Group Proprietary System
+                        BodyMax Gym Proprietary System
                     </p>
                 </div>
             </div>

@@ -115,7 +115,7 @@ export function TrainersSchedules() {
                         <div className="pt-8 mt-8 border-t border-text/5 space-y-4">
                             <div className="flex items-center gap-4 text-text/40">
                                 <MapPin size={18} className="text-accent" />
-                                <p className="text-xs font-medium ">Infinity Hotel, MG 3rd Floor - Kigali, Rwanda</p>
+                                <p className="text-xs font-medium ">BodyMax Gym, MG 3rd Floor - Kigali, Rwanda</p>
                             </div>
                         </div>
                     </Card>

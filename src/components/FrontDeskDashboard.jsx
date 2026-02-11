@@ -57,7 +57,7 @@ export function FrontDeskDashboard({ onNavigate }) {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
                 <div>
                     <h2 className="text-accent text-[10px] font-bold uppercase tracking-[0.4em] mb-1 leading-none">Front Desk Operations</h2>
-                    <p className="text-text text-2xl md:text-3xl font-bold tracking-tighter leading-none uppercase">INFINITY HOTEL GYM</p>
+                    <p className="text-text text-2xl md:text-3xl font-bold tracking-tighter leading-none uppercase">BODYMAX GYM</p>
                 </div>
 
                 <div className="flex gap-4">

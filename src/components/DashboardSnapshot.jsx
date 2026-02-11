@@ -23,7 +23,7 @@ export function DashboardSnapshot() {
             <div className="flex justify-between items-end">
                 <div>
                     <h2 className="text-accent text-[10px] font-bold uppercase tracking-[0.4em] mb-1 leading-none">Operational Intelligence</h2>
-                    <p className="text-text text-2xl md:text-3xl font-bold tracking-tighter leading-none uppercase">Infinity Hotel Gym</p>
+                    <p className="text-text text-2xl md:text-3xl font-bold tracking-tighter leading-none uppercase">BodyMax Gym</p>
                 </div>
                 <div className="flex items-center gap-4 bg-card px-6 py-4 rounded-3xl border border-text/5 shadow-premium">
                     <div className="w-3 h-3 bg-success rounded-full animate-pulse shadow-[0_0_15px_rgba(46,204,113,0.5)]" />

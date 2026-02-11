@@ -1,5 +1,5 @@
 
--- Fix missing RLS policies for Infinity Hotel Gym (Idempotent Version)
+-- Fix missing RLS policies for BodyMax Gym (Idempotent Version)
 
 -- 1. Profiles: Users need to be able to read their own profile to determine their role
 drop policy if exists "Users can view their own profile" on public.profiles;
