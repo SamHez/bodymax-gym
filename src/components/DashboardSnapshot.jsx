@@ -54,7 +54,7 @@ export function DashboardSnapshot() {
                                         )}
                                         style={{ height: `${(item.revenue / maxRev) * 100}%` }}
                                     >
-                                        <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-text text-surface dark:bg-accent dark:text-surface text-[9px] font-bold px-2 py-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-all shadow-premium whitespace-nowrap z-20">
+                                        <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-text text-surface dark:bg-accent dark:text-surface text-[9px] font-bold px-2 py-1.5 rounded-xl transition-all shadow-premium whitespace-nowrap z-20">
                                             {Math.round(item.revenue)}k
                                         </div>
                                     </div>

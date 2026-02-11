@@ -96,8 +96,7 @@ export function FinanceReports() {
                     <div className="h-full flex flex-col justify-center gap-8 py-10 px-4">
                         {[
                             { name: 'Normal Membership', value: 65, color: 'bg-primary' },
-                            { name: 'Student Tier', value: 20, color: 'bg-accent' },
-                            { name: 'Hotel Residents', value: 10, color: 'bg-text/20' },
+                            { name: 'Group Membership', value: 20, color: 'bg-accent' },
                             { name: 'Daily Casuals', value: 5, color: 'bg-text/5' },
                         ].map(s => (
                             <div key={s.name} className="space-y-3">

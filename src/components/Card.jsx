@@ -1,9 +1,9 @@
 import React from 'react';
 import { cn } from '../lib/utils';
 
-export function Card({ children, className, title, subtitle }) {
+export function Card({ children, className, title, subtitle, ...props }) {
     return (
-        <div className={cn("glass-card p-6 md:p-8 rounded-[2.5rem] animate-in fade-in slide-in-from-bottom-2 duration-500", className)}>
+        <div className={cn("glass-card p-6 md:p-8 rounded-[2.5rem] animate-in fade-in slide-in-from-bottom-2 duration-500", className)} {...props}>
             {(title || subtitle) && (
                 <div className="mb-8">
                     {subtitle && <p className="text-accent text-[9px] font-bold uppercase tracking-[0.3em] mb-1 leading-none">{subtitle}</p>}

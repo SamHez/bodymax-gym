@@ -1,10 +1,14 @@
--- BodyMax Gym Database Schema
+-- 1. Reset Schema (Careful! This deletes data)
+drop table if exists public.payments cascade;
+drop table if exists public.attendance cascade;
+drop table if exists public.members cascade;
+drop table if exists public.trainers cascade;
+drop table if exists public.profiles cascade;
 
--- Enable UUID extension
-create extension if not exists "uuid-ossp";
-
--- 1. Members Table
+-- 2. Create Tables
+-- Members Table
 create table public.members (
+
     id uuid default uuid_generate_v4() primary key,
     full_name text not null,
     phone text,
@@ -22,7 +26,8 @@ create table public.members (
 create table public.attendance (
     id uuid default uuid_generate_v4() primary key,
     member_id uuid references public.members(id) on delete cascade not null,
-    check_in_time timestamp with time zone default timezone('utc'::text, now()) not null
+    check_in_time timestamp with time zone default timezone('utc'::text, now()) not null,
+    attendance_date date not null default current_date
 );
 
 -- 3. Payments Table

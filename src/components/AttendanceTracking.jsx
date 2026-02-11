@@ -32,7 +32,7 @@ export function AttendanceTracking() {
                 </div>
                 <div className="z-10">
                     <h2 className="text-accent text-[9px] md:text-[11px] font-bold uppercase tracking-[0.5em] mb-2 leading-none ">Asset Presence</h2>
-                    <p className="text-text text-2xl md:text-4xl font-bold tracking-tighter leading-none uppercase">CHECK-IN</p>
+                    <p className="text-text text-2xl md:text-3xl font-bold tracking-tighter leading-none uppercase">CHECK-IN</p>
                 </div>
                 <div className="flex items-center gap-4 md:gap-10 z-10">
                     <div className="text-right">
@@ -48,13 +48,13 @@ export function AttendanceTracking() {
             </div>
 
             {/* Strategic Command Input */}
-            <Card className="p-2 md:p-3 border border-text/5 shadow-premium group">
+            <Card className="p-2 border border-text/5 shadow-premium group">
                 <div className="relative">
-                    <Search className="absolute left-6 md:left-10 top-1/2 -translate-y-1/2 text-text/20 group-focus-within:text-accent transition-colors w-6 h-6 md:w-8 md:h-8" strokeWidth={2.5} />
+                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-text/20 group-focus-within:text-accent transition-colors w-4 h-4" strokeWidth={2.5} />
                     <input
                         type="text"
                         placeholder="IDENTIFY PERSONNEL..."
-                        className="w-full bg-surface/50 border-none rounded-[1.5rem] md:rounded-[2.5rem] py-5 md:py-8 pl-16 md:pl-24 pr-6 md:pr-10 text-text font-bold text-sm md:text-2xl focus:ring-4 focus:ring-accent/10 placeholder:text-text/10 transition-all font-sans uppercase tracking-widest"
+                        className="w-full bg-surface/50 border-none rounded-[1.5rem] py-3 pl-14 pr-6 text-text font-bold text-sm focus:ring-4 focus:ring-accent/10 placeholder:text-text/10 transition-all font-sans uppercase tracking-widest"
                         value={search}
                         onChange={e => setSearch(e.target.value)}
                         autoFocus
@@ -106,7 +106,7 @@ export function AttendanceTracking() {
                                             member.status === 'Expired' ? "text-error" : "text-accent"
                                     )}>{member.status} {member.category} TIER</span>
                                     <div className="hidden md:block w-1.5 h-1.5 bg-text/5 rounded-full" />
-                                    <span className="hidden md:block text-text/20 text-[10px] font-bold uppercase tracking-widest tabular-nums">AUTH #{member.id}X924</span>
+                                    {/*<span className="hidden md:block text-text/20 text-[10px] font-bold uppercase tracking-widest tabular-nums">AUTH #{member.id}X924</span>*/}
                                 </div>
                             </div>
                         </div>

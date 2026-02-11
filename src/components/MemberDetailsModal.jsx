@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { X, User, Phone, Mail, Calendar, CreditCard, ShieldCheck, AlertCircle, Clock } from 'lucide-react';
 import { cn } from '../lib/utils'; // Assuming utils exists
+import { motion } from 'framer-motion';
 
 export function MemberDetailsModal({ member, onClose, onDelete }) {
     if (!member) return null;
@@ -30,18 +31,27 @@ export function MemberDetailsModal({ member, onClose, onDelete }) {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
-            <div
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 className="absolute inset-0 bg-surface/80 backdrop-blur-sm transition-opacity"
                 onClick={onClose}
             />
 
-            <div className="relative w-full max-w-lg bg-card border border-text/5 rounded-[2.5rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                transition={{ type: "spring", duration: 0.5 }}
+                className="relative w-full max-w-lg bg-card border border-text/5 rounded-[2.5rem] shadow-2xl overflow-hidden"
+            >
                 {/* Header / Banner */}
                 <div className="relative h-32 bg-primary/10 overflow-hidden">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-accent/10 rounded-full blur-[60px] translate-x-1/2 -translate-y-1/2" />
                     <button
                         onClick={onClose}
-                        className="absolute top-4 right-4 p-2 bg-surface/50 hover:bg-surface text-text/60 hover:text-text rounded-full transition-all backdrop-blur-md"
+                        className="absolute top-4 right-4 p-2 bg-surface/50 hover:bg-surface text-text/60 hover:text-text rounded-full transition-all backdrop-blur-md z-10"
                     >
                         <X size={20} />
                     </button>
@@ -133,8 +143,7 @@ export function MemberDetailsModal({ member, onClose, onDelete }) {
                         </div>
                     </div>
                 </div>
-            </div>
+            </motion.div>
         </div>
     );
 }
-

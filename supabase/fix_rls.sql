@@ -5,9 +5,10 @@
 drop policy if exists "Users can view their own profile" on public.profiles;
 create policy "Users can view their own profile" on public.profiles for select to authenticated using (auth.uid() = id);
 
--- 2. Attendance: Authenticated users need to see today's attendance count
+-- 2. Attendance: Authenticated users need to manage daily attendance
 drop policy if exists "Authenticated users can view attendance" on public.attendance;
-create policy "Authenticated users can view attendance" on public.attendance for select to authenticated using (true);
+drop policy if exists "Authenticated users can manage attendance" on public.attendance;
+create policy "Authenticated users can manage attendance" on public.attendance for all to authenticated using (true);
 
 -- 3. Payments: Allow all actions for managers/receptionists for now to enable enrollment
 drop policy if exists "Managers can view all payments" on public.payments;

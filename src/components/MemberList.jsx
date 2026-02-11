@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { Card } from './Card';
 import { Search, Filter, MoreHorizontal, User, ShieldCheck, Plus, Trash2, Eye } from 'lucide-react';
-import { cn } from '../lib/utils'; // Keep this import
+import { cn } from '../lib/utils';
+import { AnimatePresence } from 'framer-motion';
 import { MemberDetailsModal } from './MemberDetailsModal';
-
 import { useMembers } from '../lib/data-hooks';
 
 export function MemberList({ onAddMember }) {
     const [search, setSearch] = useState('');
-    const { members, loading, deleteMember } = useMembers(); // Destructure deleteMember
+    const { members, loading, deleteMember } = useMembers();
     const [selectedMember, setSelectedMember] = useState(null);
     const [menuOpenId, setMenuOpenId] = useState(null);
 
@@ -20,7 +20,7 @@ export function MemberList({ onAddMember }) {
     const handleDelete = async (id, e) => {
         e.stopPropagation();
         if (window.confirm("Are you sure you want to permanently delete this member?")) {
-            await deleteMember(id); // Use the hook function
+            await deleteMember(id);
             setMenuOpenId(null);
         }
     };
@@ -44,8 +44,8 @@ export function MemberList({ onAddMember }) {
                 </button>
             </div>
 
-            {/* Tactical Search Interface - Reduced Size */}
-            <Card className="p-2 border border-text/5 shadow-premium group max-w-xl">
+            {/* Tactical Search Interface - Full Width */}
+            <Card className="p-2 border border-text/5 shadow-premium group">
                 <div className="relative">
                     <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-text/20 group-focus-within:text-accent transition-colors w-4 h-4" strokeWidth={2.5} />
                     <input
@@ -150,13 +150,16 @@ export function MemberList({ onAddMember }) {
             </div>
 
             {/* Details Modal */}
-            {selectedMember && (
-                <MemberDetailsModal
-                    member={selectedMember}
-                    onClose={() => setSelectedMember(null)}
-                    onDelete={deleteMember}
-                />
-            )}
+            <AnimatePresence>
+                {selectedMember && (
+                    <MemberDetailsModal
+                        member={selectedMember}
+                        onClose={() => setSelectedMember(null)}
+                        onDelete={deleteMember}
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
 }
+
