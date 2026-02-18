@@ -3,6 +3,7 @@ import { Mail, Lock, ChevronRight, Activity, Sun, Moon } from 'lucide-react';
 import { useTheme } from '../lib/useTheme';
 import logo from '../assets/logo.png';
 import { supabase } from '../lib/supabase';
+import { apiFetch } from '../lib/api';
 
 export function Login({ onLogin }) {
     const [email, setEmail] = useState('');
@@ -27,20 +28,13 @@ export function Login({ onLogin }) {
             return;
         }
 
-        // Fetch user profile for role
-        const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', data.user.id)
-            .single();
-
-        if (profileError) {
+        // Fetch user profile for role via backend API
+        try {
+            const profile = await apiFetch('/profile');
+            onLogin({ email: data.user.email, role: profile.role.toLowerCase() });
+        } catch {
             setError("Profile not found. Please contact admin.");
-            setLoading(false);
-            return;
         }
-
-        onLogin({ email: data.user.email, role: profile.role.toLowerCase() });
         setLoading(false);
     };
 

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card } from './Card';
 import { UserCheck, Search, CheckCircle2, QrCode, ShieldAlert, Ticket } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { supabase } from '../lib/supabase';
+import { apiFetchIdempotent } from '../lib/api';
 
 import { useMembers, useAttendance } from '../lib/data-hooks';
 
@@ -27,29 +27,15 @@ export function AttendanceTracking() {
     const handleDailyPass = async () => {
         const name = prompt("Enter Guest Name (Optional):") || "Daily Pass Guest";
         try {
-            // 1. Create a temporary member record
-            const { data: member, error: memberError } = await supabase
-                .from('members')
-                .insert([{
-                    full_name: name,
-                    category: 'Daily Pass',
-                    duration: 'Daily',
-                    start_date: new Date().toISOString().split('T')[0],
-                    expiry_date: new Date().toISOString().split('T')[0], // Expires today
-                    status: 'Active'
-                }])
-                .select()
-                .single();
-
-            if (memberError) throw memberError;
-
-            // 2. Check them in
-            await checkIn(member.id);
+            await apiFetchIdempotent('/attendance/daily-pass', {
+                method: 'POST',
+                body: JSON.stringify({ name }),
+            });
             alert(`Daily Pass issued for ${name}`);
-            window.location.reload(); // Simple reload to refresh the list
+            window.location.reload();
         } catch (error) {
-            console.error("Daily Pass Error:", error);
-            alert("Failed to issue Daily Pass.");
+            console.error('Daily Pass Error:', error);
+            alert('Failed to issue Daily Pass.');
         }
     };
 

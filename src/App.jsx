@@ -14,6 +14,7 @@ import { FrontDeskDashboard } from './components/FrontDeskDashboard';
 import { useTheme } from './lib/useTheme';
 import { cn } from './lib/utils';
 import { supabase } from './lib/supabase';
+import { apiFetch, apiFetchIdempotent } from './lib/api';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -46,13 +47,12 @@ function App() {
   }, []);
 
   const fetchProfile = async (authUser) => {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', authUser.id)
-      .single();
-
-    setUser({ email: authUser.email, role: profile?.role?.toLowerCase() || 'receptionist', id: authUser.id });
+    try {
+      const profile = await apiFetch('/profile');
+      setUser({ email: authUser.email, role: profile?.role?.toLowerCase() || 'receptionist', id: authUser.id });
+    } catch {
+      setUser({ email: authUser.email, role: 'receptionist', id: authUser.id });
+    }
     setLoading(false);
   };
 
@@ -63,39 +63,22 @@ function App() {
 
   const handleRegister = async (formData) => {
     try {
-      // 1. Create Member
-      const { data: member, error: memberError } = await supabase
-        .from('members')
-        .insert([{
-          full_name: formData.fullName,
+      await apiFetchIdempotent('/members', {
+        method: 'POST',
+        body: JSON.stringify({
+          fullName: formData.fullName,
           category: formData.category,
           duration: formData.duration,
-          start_date: new Date().toISOString().split('T')[0],
-          expiry_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Placeholder 1 month
-          status: 'Active'
-        }])
-        .select()
-        .single();
-
-      if (memberError) throw memberError;
-
-      // 2. Clear Registration State
+          paymentMethod: formData.paymentMethod,
+          phone: formData.phone,
+          email: formData.email,
+        }),
+      });
       setShowRegistration(false);
       navigate('/members');
-
-      // 3. Create initial payment
-      const basePrice = 30000; // Simplified for this logic
-      await supabase
-        .from('payments')
-        .insert([{
-          member_id: member.id,
-          amount: basePrice,
-          payment_method: formData.paymentMethod
-        }]);
-
     } catch (error) {
-      console.error("Registration Error:", error.message);
-      alert("Failed to register member. Check logs.");
+      console.error('Registration Error:', error.message);
+      alert(error.message || 'Failed to register member.');
     }
   };
 

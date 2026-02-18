@@ -1,41 +1,26 @@
 import { useState, useEffect } from 'react';
-import { supabase } from './supabase';
+import { apiFetch } from './api';
 
 export function useMembers() {
     const [members, setMembers] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        async function fetchMembers() {
-            setLoading(true);
-            const { data, error } = await supabase
-                .from('members')
-                .select('*');
-
-            if (error) {
-                console.error("Supabase Fetch Error (Members):", error);
-            }
-            if (data) {
-                console.log("Supabase Fetch Success (Members):", data.length, "records");
-                setMembers(data);
-            }
-            setLoading(false);
-        }
-        fetchMembers();
+        apiFetch('/members')
+            .then(data => setMembers(data))
+            .catch(err => console.error('Fetch members error:', err))
+            .finally(() => setLoading(false));
     }, []);
 
     const deleteMember = async (id) => {
-        const { error } = await supabase
-            .from('members')
-            .delete()
-            .eq('id', id);
-
-        if (!error) {
+        try {
+            await apiFetch(`/members/${id}`, { method: 'DELETE' });
             setMembers(prev => prev.filter(m => m.id !== id));
             return true;
+        } catch (err) {
+            console.error('Delete member error:', err);
+            return false;
         }
-        console.error("Error deleting member:", error);
-        return false;
     };
 
     return { members, loading, deleteMember };
@@ -47,51 +32,38 @@ export function useAttendance() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        async function fetchAttendance() {
-            setLoading(true);
-            const today = new Date().toISOString().split('T')[0];
-            const { data, error } = await supabase
-                .from('attendance')
-                .select('member_id')
-                .eq('attendance_date', today);
-
-            if (data) {
-                setCheckedInIds(data.map(a => a.member_id));
-                setTodayCount(data.length);
-            }
-            setLoading(false);
-        }
-        fetchAttendance();
+        apiFetch('/attendance/today')
+            .then(data => {
+                setCheckedInIds(data.checkedInIds);
+                setTodayCount(data.count);
+            })
+            .catch(err => console.error('Fetch attendance error:', err))
+            .finally(() => setLoading(false));
     }, []);
 
     const checkIn = async (memberId) => {
-        const today = new Date().toISOString().split('T')[0];
-        const { error } = await supabase
-            .from('attendance')
-            .insert([{ member_id: memberId, attendance_date: today }]);
-
-        if (!error) {
+        try {
+            await apiFetch('/attendance/checkin', {
+                method: 'POST',
+                body: JSON.stringify({ memberId }),
+            });
             setTodayCount(prev => prev + 1);
             setCheckedInIds(prev => [...prev, memberId]);
             return true;
+        } catch {
+            return false;
         }
-        return false;
     };
 
     const removeCheckIn = async (memberId) => {
-        const today = new Date().toISOString().split('T')[0];
-        const { error } = await supabase
-            .from('attendance')
-            .delete()
-            .eq('member_id', memberId)
-            .eq('attendance_date', today);
-
-        if (!error) {
+        try {
+            await apiFetch(`/attendance/checkin/${memberId}`, { method: 'DELETE' });
             setTodayCount(prev => Math.max(0, prev - 1));
             setCheckedInIds(prev => prev.filter(id => id !== memberId));
             return true;
+        } catch {
+            return false;
         }
-        return false;
     };
 
     return { todayCount, checkedInIds, checkIn, removeCheckIn, loading };
@@ -102,79 +74,10 @@ export function useFinance() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        async function fetchFinance() {
-            setLoading(true);
-            const { data, error } = await supabase
-                .from('payments')
-                .select('*');
-
-            if (data) {
-                const total = data.reduce((sum, p) => sum + Number(p.amount), 0);
-
-                // Calculate monthly stats for the last 10 months
-                const months = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
-                const monthlyData = new Array(10).fill(0).map((_, i) => {
-                    const date = new Date();
-                    date.setDate(1); // Set to 1st to avoid end-of-month overflow issues
-                    date.setMonth(date.getMonth() - (9 - i));
-                    const monthIndex = date.getMonth();
-                    const year = date.getFullYear();
-
-                    const monthRevenue = data
-                        .filter(p => {
-                            if (!p.transaction_date) return false;
-                            const pDate = new Date(p.transaction_date);
-                            return pDate.getUTCMonth() === monthIndex && pDate.getUTCFullYear() === year;
-                        })
-                        .reduce((sum, p) => sum + Number(p.amount), 0);
-
-                    return {
-                        month: months[monthIndex],
-                        revenue: monthRevenue / 1000 // In 'k'
-                    };
-                });
-
-                // Calculate method stats
-                const mobileRevenue = data
-                    .filter(p => p.payment_method === 'Mobile Money')
-                    .reduce((sum, p) => sum + Number(p.amount), 0);
-                const cashRevenue = data
-                    .filter(p => p.payment_method === 'Cash')
-                    .reduce((sum, p) => sum + Number(p.amount), 0);
-
-                // Calculate daily stats for the last 7 days
-                const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-                const dailyData = new Array(7).fill(0).map((_, i) => {
-                    const date = new Date();
-                    date.setDate(date.getDate() - (6 - i)); // Go back 6 days to today
-                    const dayIndex = date.getDay();
-                    const dayDate = date.toISOString().split('T')[0];
-
-                    const dayRevenue = data
-                        .filter(p => {
-                            if (!p.transaction_date) return false;
-                            return p.transaction_date.startsWith(dayDate);
-                        })
-                        .reduce((sum, p) => sum + Number(p.amount), 0);
-
-                    return {
-                        day: days[dayIndex],
-                        revenue: dayRevenue / 1000 // In 'k'
-                    };
-                });
-
-                setStats({
-                    revenue: total,
-                    transactions: data.length,
-                    monthlyData,
-                    mobileRevenue,
-                    cashRevenue,
-                    dailyData
-                });
-            }
-            setLoading(false);
-        }
-        fetchFinance();
+        apiFetch('/finance/stats')
+            .then(data => setStats(data))
+            .catch(err => console.error('Fetch finance error:', err))
+            .finally(() => setLoading(false));
     }, []);
 
     return { stats, loading };

@@ -4,7 +4,7 @@ import { Users, UserPlus, Calendar, Activity, CheckCircle2, TrendingUp, Search, 
 import { cn } from '../lib/utils';
 
 import { useAttendance, useMembers, useFinance } from '../lib/data-hooks';
-import { supabase } from '../lib/supabase';
+import { apiFetch } from '../lib/api';
 
 export function FrontDeskDashboard({ onNavigate }) {
     const { todayCount, checkIn, removeCheckIn, checkedInIds, loading: attendanceLoading } = useAttendance();
@@ -39,67 +39,14 @@ export function FrontDeskDashboard({ onNavigate }) {
     };
 
     const generateDemoData = async () => {
-        const confirm = window.confirm("Generate random payment data for the last 7 days?");
-        if (!confirm) return;
-
+        if (!window.confirm('Generate random payment data for the last 7 days?')) return;
         try {
-            // Get a valid member ID
-            const { data: member } = await supabase.from('members').select('id').limit(1).single();
-            if (!member) {
-                alert("No members found. Create a member first.");
-                return;
-            }
-
-
-            // 1. Clear existing payments to prevent accumulation
-            // Retrieve all IDs first to ensure robust deletion (sometimes bulk delete is restricted)
-            const { data: existingData } = await supabase.from('payments').select('id');
-            if (existingData && existingData.length > 0) {
-                const ids = existingData.map(d => d.id);
-                const { error: deleteError } = await supabase
-                    .from('payments')
-                    .delete()
-                    .in('id', ids);
-
-                if (deleteError) {
-                    console.error("Error clearing payments:", deleteError);
-                    alert("Warning: Could not clear previous data. Check console/permissions.");
-                }
-            }
-
-            const payments = [];
-            for (let i = 0; i < 7; i++) {
-                // Generate 2-5 transactions per day to keep total realistic
-                const transactionsCount = Math.floor(Math.random() * 4) + 2;
-
-                for (let j = 0; j < transactionsCount; j++) {
-                    const date = new Date();
-                    date.setDate(date.getDate() - i);
-                    // Randomize time within the day (8 AM to 8 PM)
-                    date.setHours(Math.floor(Math.random() * 13) + 8);
-                    date.setMinutes(Math.floor(Math.random() * 60));
-                    date.setSeconds(0);
-
-                    // Random amount between 2k and 12k (matches realistic gym fees/products)
-                    const amount = Math.floor(Math.random() * (12000 - 2000 + 1)) + 2000;
-
-                    payments.push({
-                        member_id: member.id,
-                        amount: amount,
-                        payment_method: Math.random() > 0.4 ? 'Mobile Money' : 'Cash',
-                        transaction_date: date.toISOString()
-                    });
-                }
-            }
-
-            const { error } = await supabase.from('payments').insert(payments);
-            if (error) throw error;
-
-            alert("Demo data generated! Reloading...");
+            await apiFetch('/demo/generate', { method: 'POST' });
+            alert('Demo data generated! Reloading...');
             window.location.reload();
         } catch (error) {
-            console.error("Demo Data Error:", error);
-            alert("Failed to generate data.");
+            console.error('Demo Data Error:', error);
+            alert('Failed to generate data.');
         }
     };
 
