@@ -3,6 +3,7 @@ import { Card } from './Card';
 import { UserCheck, Search, CheckCircle2, QrCode, ShieldAlert, Ticket } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { apiFetchIdempotent } from '../lib/api';
+import { toast } from '../lib/toast';
 
 import { useMembers, useAttendance } from '../lib/data-hooks';
 
@@ -31,11 +32,11 @@ export function AttendanceTracking() {
                 method: 'POST',
                 body: JSON.stringify({ name }),
             });
-            alert(`Daily Pass issued for ${name}`);
+            toast.success(`Daily Pass issued for ${name}`);
             window.location.reload();
         } catch (error) {
             console.error('Daily Pass Error:', error);
-            alert('Failed to issue Daily Pass.');
+            toast.error('Failed to issue Daily Pass.');
         }
     };
 

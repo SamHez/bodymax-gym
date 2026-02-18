@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { X, User, Phone, Mail, Calendar, CreditCard, ShieldCheck, AlertCircle, Clock } from 'lucide-react';
 import { cn } from '../lib/utils'; // Assuming utils exists
 import { motion } from 'framer-motion';
+import { confirmToast } from '../lib/toast';
 
 export function MemberDetailsModal({ member, onClose, onDelete }) {
     if (!member) return null;
@@ -22,8 +23,9 @@ export function MemberDetailsModal({ member, onClose, onDelete }) {
         };
     }, []);
 
-    const handleDelete = () => {
-        if (window.confirm(`Are you sure you want to delete ${member.full_name}? This action cannot be undone.`)) {
+    const handleDelete = async () => {
+        const ok = await confirmToast(`Delete ${member.full_name}? This cannot be undone.`);
+        if (ok) {
             onDelete(member.id);
             onClose();
         }

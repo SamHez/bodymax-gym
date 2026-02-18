@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Card, StatCard } from './Card';
-import { Users, UserPlus, Calendar, Activity, CheckCircle2, TrendingUp, Search, Plus } from 'lucide-react';
+import { Users, UserPlus, Calendar, Activity, CheckCircle2, TrendingUp, Search, Plus, MessageSquare } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 import { useAttendance, useMembers, useFinance } from '../lib/data-hooks';
 import { apiFetch } from '../lib/api';
+import { toast, confirmToast } from '../lib/toast';
 
 export function FrontDeskDashboard({ onNavigate }) {
     const { todayCount, checkIn, removeCheckIn, checkedInIds, loading: attendanceLoading } = useAttendance();
@@ -13,6 +14,7 @@ export function FrontDeskDashboard({ onNavigate }) {
 
     const isSyncing = attendanceLoading || membersLoading || financeLoading;
     const [search, setSearch] = useState('');
+    const [sendingAlerts, setSendingAlerts] = useState(false);
 
     const expiredCount = members.filter(m => m.status === 'Expired').length;
     const expiringSoonCount = members.filter(m => m.status === 'Expiring Soon').length;
@@ -39,14 +41,30 @@ export function FrontDeskDashboard({ onNavigate }) {
     };
 
     const generateDemoData = async () => {
-        if (!window.confirm('Generate random payment data for the last 7 days?')) return;
+        const ok = await confirmToast('Generate random payment data for the last 7 days?');
+        if (!ok) return;
         try {
             await apiFetch('/demo/generate', { method: 'POST' });
-            alert('Demo data generated! Reloading...');
-            window.location.reload();
+            toast.success('Demo data generated! Reloading...');
+            setTimeout(() => window.location.reload(), 1000);
         } catch (error) {
             console.error('Demo Data Error:', error);
-            alert('Failed to generate data.');
+            toast.error('Failed to generate data.');
+        }
+    };
+
+    const sendExpiryAlerts = async () => {
+        const ok = await confirmToast('Send SMS alerts to members with expiring memberships?');
+        if (!ok) return;
+        setSendingAlerts(true);
+        try {
+            const result = await apiFetch('/expiry/check', { method: 'POST' });
+            toast.success(`SMS sent: ${result.sent} | Expiring: ${result.expiring_soon} | Expired: ${result.already_expired}`);
+        } catch (error) {
+            console.error('Expiry Alert Error:', error);
+            toast.error('Failed to send alerts.');
+        } finally {
+            setSendingAlerts(false);
         }
     };
 
@@ -80,6 +98,14 @@ export function FrontDeskDashboard({ onNavigate }) {
                         title="Populate Chart"
                     >
                         <Activity size={16} /> Demo Data
+                    </button>
+                    <button
+                        onClick={sendExpiryAlerts}
+                        disabled={sendingAlerts}
+                        className="flex items-center gap-3 bg-card text-text border border-text/10 px-6 py-4 rounded-3xl font-bold uppercase tracking-widest text-xs hover:border-accent/30 hover:scale-105 active:scale-95 transition-all shadow-premium disabled:opacity-50"
+                    >
+                        <MessageSquare size={18} strokeWidth={2.5} />
+                        {sendingAlerts ? 'Sending...' : 'SMS Alerts'}
                     </button>
                     <button
                         onClick={() => onNavigate('attendance')}

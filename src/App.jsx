@@ -15,6 +15,8 @@ import { useTheme } from './lib/useTheme';
 import { cn } from './lib/utils';
 import { supabase } from './lib/supabase';
 import { apiFetch, apiFetchIdempotent } from './lib/api';
+import { Toaster } from 'react-hot-toast';
+import { toast } from './lib/toast';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -78,7 +80,7 @@ function App() {
       navigate('/members');
     } catch (error) {
       console.error('Registration Error:', error.message);
-      alert(error.message || 'Failed to register member.');
+      toast.error(error.message || 'Failed to register member.');
     }
   };
 
@@ -145,6 +147,23 @@ function App() {
         </>
       )}
       {!user && <Routes><Route path="*" element={<Login onLogin={() => { }} />} /></Routes>}
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          style: {
+            background: 'var(--card)',
+            color: 'var(--text)',
+            border: '1px solid rgba(255,255,255,0.05)',
+            borderRadius: '1.5rem',
+            padding: '16px 20px',
+            fontSize: '13px',
+            fontWeight: 600,
+            boxShadow: '0 10px 40px rgba(0,0,0,0.12)',
+          },
+          success: { iconTheme: { primary: '#2ECC71', secondary: '#fff' } },
+          error: { iconTheme: { primary: '#E74C3C', secondary: '#fff' } },
+        }}
+      />
     </div>
   );
 }

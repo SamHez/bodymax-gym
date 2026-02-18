@@ -5,6 +5,7 @@ import { cn } from '../lib/utils';
 import { AnimatePresence } from 'framer-motion';
 import { MemberDetailsModal } from './MemberDetailsModal';
 import { useMembers } from '../lib/data-hooks';
+import { confirmToast } from '../lib/toast';
 
 export function MemberList({ onAddMember }) {
     const [search, setSearch] = useState('');
@@ -19,7 +20,8 @@ export function MemberList({ onAddMember }) {
 
     const handleDelete = async (id, e) => {
         e.stopPropagation();
-        if (window.confirm("Are you sure you want to permanently delete this member?")) {
+        const ok = await confirmToast('Permanently delete this member?');
+        if (ok) {
             await deleteMember(id);
             setMenuOpenId(null);
         }

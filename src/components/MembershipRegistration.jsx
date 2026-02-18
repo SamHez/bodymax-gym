@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Card } from './Card';
-import { UserPlus, ChevronRight, Check, Shield, Activity, Phone, User as UserIcon } from 'lucide-react';
+import { UserPlus, ChevronRight, Check, Shield, Activity, Phone, User as UserIcon, AlertTriangle } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { toast } from '../lib/toast';
 
 export function MembershipRegistration({ onComplete }) {
     const [step, setStep] = useState(1);
@@ -12,6 +13,45 @@ export function MembershipRegistration({ onComplete }) {
         duration: 'Monthly',
         paymentMethod: 'Cash',
     });
+    const [errors, setErrors] = useState({});
+
+    const validatePhone = (phone) => {
+        if (!phone) return 'Phone number is required';
+        const cleaned = phone.replace(/[\s\-]/g, '');
+        if (!/^\+?250\d{9}$/.test(cleaned) && !/^0\d{9}$/.test(cleaned)) {
+            return 'Enter a valid Rwandan number (e.g. +250781234567)';
+        }
+        return null;
+    };
+
+    const validateName = (name) => {
+        if (!name || name.trim().length < 3) return 'Full name is required (min 3 characters)';
+        if (name.trim().split(/\s+/).length < 2) return 'Enter first and last name';
+        return null;
+    };
+
+    const formatPhone = (value) => {
+        let cleaned = value.replace(/[^\d+]/g, '');
+        if (cleaned.startsWith('07') || cleaned.startsWith('078') || cleaned.startsWith('072') || cleaned.startsWith('073')) {
+            cleaned = '+250' + cleaned.slice(1);
+        }
+        return cleaned;
+    };
+
+    const handlePhoneChange = (e) => {
+        const formatted = formatPhone(e.target.value);
+        setFormData({ ...formData, phone: formatted });
+        if (errors.phone) {
+            setErrors({ ...errors, phone: validatePhone(formatted) });
+        }
+    };
+
+    const handleNameChange = (e) => {
+        setFormData({ ...formData, fullName: e.target.value });
+        if (errors.fullName) {
+            setErrors({ ...errors, fullName: validateName(e.target.value) });
+        }
+    };
 
     const categories = [
         { name: 'Normal Membership', price: 30000, desc: 'Comprehensive Gym Access' },
@@ -37,7 +77,21 @@ export function MembershipRegistration({ onComplete }) {
         return price.toLocaleString();
     };
 
-    const nextStep = () => setStep(s => s + 1);
+    const validateStep1 = () => {
+        const nameErr = validateName(formData.fullName);
+        const phoneErr = validatePhone(formData.phone);
+        setErrors({ fullName: nameErr, phone: phoneErr });
+        if (nameErr || phoneErr) {
+            toast.error(nameErr || phoneErr);
+            return false;
+        }
+        return true;
+    };
+
+    const nextStep = () => {
+        if (step === 1 && !validateStep1()) return;
+        setStep(s => s + 1);
+    };
     const prevStep = () => setStep(s => s - 1);
 
     return (
@@ -66,11 +120,19 @@ export function MembershipRegistration({ onComplete }) {
                             <input
                                 type="text"
                                 placeholder="Ex. Emmanuel Murenzi"
-                                className="glass-input w-full py-5 md:py-7 pl-6 md:pl-8 rounded-2xl md:rounded-[2rem] font-bold text-lg md:text-xl "
+                                className={cn(
+                                    "glass-input w-full py-5 md:py-7 pl-6 md:pl-8 rounded-2xl md:rounded-[2rem] font-bold text-lg md:text-xl",
+                                    errors.fullName && "border-error/50 ring-2 ring-error/20"
+                                )}
                                 value={formData.fullName}
-                                onChange={e => setFormData({ ...formData, fullName: e.target.value })}
+                                onChange={handleNameChange}
                                 autoFocus
                             />
+                            {errors.fullName && (
+                                <p className="flex items-center gap-1.5 text-error text-[10px] font-bold ml-2 mt-1">
+                                    <AlertTriangle size={12} /> {errors.fullName}
+                                </p>
+                            )}
                         </div>
                         <div className="space-y-3 md:space-y-4">
                             <label className="text-[10px] md:text-[11px] font-bold text-text/30 uppercase tracking-[0.3em] ml-2 flex items-center gap-2">
@@ -78,11 +140,19 @@ export function MembershipRegistration({ onComplete }) {
                             </label>
                             <input
                                 type="tel"
-                                placeholder="+250 ..."
-                                className="glass-input w-full py-5 md:py-7 pl-6 md:pl-8 rounded-2xl md:rounded-[2rem] font-bold text-lg md:text-xl  tabular-nums"
+                                placeholder="+250781234567"
+                                className={cn(
+                                    "glass-input w-full py-5 md:py-7 pl-6 md:pl-8 rounded-2xl md:rounded-[2rem] font-bold text-lg md:text-xl tabular-nums",
+                                    errors.phone && "border-error/50 ring-2 ring-error/20"
+                                )}
                                 value={formData.phone}
-                                onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                                onChange={handlePhoneChange}
                             />
+                            {errors.phone && (
+                                <p className="flex items-center gap-1.5 text-error text-[10px] font-bold ml-2 mt-1">
+                                    <AlertTriangle size={12} /> {errors.phone}
+                                </p>
+                            )}
                         </div>
                     </div>
                     <button
