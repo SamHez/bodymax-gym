@@ -1,6 +1,9 @@
 import { supabase } from './supabase';
 
-const BASE = '/api';
+const IS_LOCAL = window.location.hostname === 'localhost';
+const BASE = IS_LOCAL
+    ? 'http://localhost:5000/api'
+    : 'https://bodymax-backend.onrender.com/api';
 
 /**
  * Fetch wrapper that attaches the Supabase auth token.
