@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 
-const IS_LOCAL = window.location.hostname === 'localhost';
+const IS_LOCAL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const BASE = IS_LOCAL
     ? 'http://localhost:5000/api'
     : 'https://bodymax-backend.onrender.com/api';
