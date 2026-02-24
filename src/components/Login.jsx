@@ -115,10 +115,16 @@ export function Login({ onLogin }) {
                     </button>
                 </form>
 
-                <div className="pt-10 text-center">
+                <div className="pt-10 text-center space-y-4">
                     <p className="text-text/20 text-[10px] font-black uppercase tracking-[0.3em]">
                         BodyMax Gym Proprietary System
                     </p>
+                    <button
+                        onClick={() => window.location.href = '/signup'}
+                        className="text-accent text-[9px] font-black uppercase tracking-widest hover:underline"
+                    >
+                        Register New Staff Account
+                    </button>
                 </div>
             </div>
         </div>

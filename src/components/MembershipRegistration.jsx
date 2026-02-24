@@ -1,19 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../lib/api';
 import { Card } from './Card';
 import { UserPlus, ChevronRight, Check, Shield, Activity, Phone, User as UserIcon, AlertTriangle } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { toast } from '../lib/toast';
 
-export function MembershipRegistration({ onComplete }) {
+export function MembershipRegistration({ onComplete, user }) {
     const [step, setStep] = useState(1);
     const [formData, setFormData] = useState({
         fullName: '',
         phone: '',
+        branchId: '',
         category: 'Normal Membership',
         duration: 'Monthly',
         paymentMethod: 'Cash',
     });
+    const [branches, setBranches] = useState([]);
+    const [loadingBranches, setLoadingBranches] = useState(true);
     const [errors, setErrors] = useState({});
+
+    useEffect(() => {
+        apiFetch('/branches')
+            .then(data => {
+                let availableBranches = data;
+                if (user?.role === 'receptionist' && user?.branch_id) {
+                    availableBranches = data.filter(b => b.id === user.branch_id);
+                }
+                setBranches(availableBranches);
+                if (availableBranches.length > 0) {
+                    setFormData(prev => ({ ...prev, branchId: availableBranches[0].id }));
+                }
+            })
+            .catch(err => console.error('Fetch branches error:', err))
+            .finally(() => setLoadingBranches(false));
+    }, []);
 
     const validatePhone = (phone) => {
         if (!phone) return 'Phone number is required';
@@ -153,6 +173,29 @@ export function MembershipRegistration({ onComplete }) {
                                     <AlertTriangle size={12} /> {errors.phone}
                                 </p>
                             )}
+                        </div>
+                    </div>
+
+                    <div className="space-y-3 md:space-y-4">
+                        <label className="text-[10px] md:text-[11px] font-bold text-text/30 uppercase tracking-[0.3em] ml-2 flex items-center gap-2">
+                            <Activity size={14} className="text-accent" /> Select Home Branch
+                        </label>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {branches.map(branch => (
+                                <button
+                                    key={branch.id}
+                                    onClick={() => setFormData({ ...formData, branchId: branch.id })}
+                                    className={cn(
+                                        "p-5 rounded-2xl border-2 font-bold text-xs uppercase tracking-widest transition-all",
+                                        formData.branchId === branch.id
+                                            ? "border-accent bg-accent/5 text-accent shadow-premium"
+                                            : "border-text/5 bg-surface text-text/20 hover:border-text/10"
+                                    )}
+                                >
+                                    {branch.name}
+                                </button>
+                            ))}
+                            {loadingBranches && <div className="p-5 text-center text-[10px] font-bold uppercase tracking-widest text-text/20 animate-pulse">Loading regions...</div>}
                         </div>
                     </div>
                     <button

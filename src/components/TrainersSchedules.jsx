@@ -3,7 +3,7 @@ import { Card } from './Card';
 import { User, Calendar, Clock, MapPin, Star, Award, ChevronRight } from 'lucide-react';
 import { cn } from '../lib/utils';
 
-export function TrainersSchedules() {
+export function TrainersSchedules({ branchId = null }) {
     const trainers = [
         { name: 'Coach Eric', specialty: 'Bodybuilding & Strength', rating: 4.9, cert: 'Certified Pro', image: 'E' },
         { name: 'Coach Sarah', specialty: 'Cardio & Yoga', rating: 4.8, cert: 'Movement Specialist', image: 'S' },

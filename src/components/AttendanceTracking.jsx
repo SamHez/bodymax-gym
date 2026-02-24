@@ -7,15 +7,16 @@ import { toast } from '../lib/toast';
 
 import { useMembers, useAttendance } from '../lib/data-hooks';
 
-export function AttendanceTracking() {
+export function AttendanceTracking({ branchId = null }) {
     const [search, setSearch] = useState('');
-    const { members, loading } = useMembers();
+    const { members, loading } = useMembers(branchId);
 
     const filteredMembers = members.filter(m =>
         m.full_name?.toLowerCase().includes(search.toLowerCase()) ||
-        m.phone?.toLowerCase().includes(search.toLowerCase())
+        m.phone?.toLowerCase().includes(search.toLowerCase()) ||
+        m.member_code?.toLowerCase().includes(search.toLowerCase())
     );
-    const { todayCount, checkIn, removeCheckIn, checkedInIds } = useAttendance();
+    const { todayCount, checkIn, removeCheckIn, checkedInIds } = useAttendance(branchId);
 
     const handleCheckIn = async (id) => {
         await checkIn(id);
@@ -27,12 +28,20 @@ export function AttendanceTracking() {
 
     const handleDailyPass = async () => {
         const name = prompt("Enter Guest Name (Optional):") || "Daily Pass Guest";
+        const amount = prompt("Enter Amount (RWF):", "2000") || "2000";
+        const paymentMethod = prompt("Payment Method (Cash/Mobile Money):", "Cash") || "Cash";
+
         try {
             await apiFetchIdempotent('/attendance/daily-pass', {
                 method: 'POST',
-                body: JSON.stringify({ name }),
+                body: JSON.stringify({ 
+                    name, 
+                    amount: parseFloat(amount), 
+                    paymentMethod,
+                    branchId: branchId 
+                }),
             });
-            toast.success(`Daily Pass issued for ${name}`);
+            toast.success(`Daily Pass issued for ${name} (RWF ${amount})`);
             window.location.reload();
         } catch (error) {
             console.error('Daily Pass Error:', error);
@@ -124,13 +133,16 @@ export function AttendanceTracking() {
                                     {member.status === 'Expired' && <ShieldAlert size={16} className="md:w-5 md:h-5 text-error" />}
                                 </div>
                                 <div className="flex items-center gap-2 md:gap-4">
+                                    <span className="text-[10px] font-black text-accent bg-accent/5 px-2 py-0.5 rounded-lg border border-accent/10 tabular-nums">
+                                        {member.member_code || '---'}
+                                    </span>
                                     <span className={cn(
                                         "text-[8px] md:text-[10px] font-bold uppercase tracking-[0.1em] md:tracking-[0.2em] ",
                                         member.status === 'Active' ? "text-success" :
                                             member.status === 'Expired' ? "text-error" : "text-accent"
                                     )}>{member.status} {member.category} TIER</span>
                                     <div className="hidden md:block w-1.5 h-1.5 bg-text/5 rounded-full" />
-                                    {/*<span className="hidden md:block text-text/20 text-[10px] font-bold uppercase tracking-widest tabular-nums">AUTH #{member.id}X924</span>*/}
+                                    <span className="hidden md:block text-text/30 text-[9px] font-bold uppercase tracking-widest">{member.phone}</span>
                                 </div>
                             </div>
                         </div>

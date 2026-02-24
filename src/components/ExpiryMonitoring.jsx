@@ -3,7 +3,7 @@ import { Card } from './Card';
 import { AlertTriangle, Clock, Calendar, Mail, Phone, ChevronRight } from 'lucide-react';
 import { cn } from '../lib/utils';
 
-export function ExpiryMonitoring() {
+export function ExpiryMonitoring({ branchId = null }) {
     const expires = [
         { name: 'Emmanuel M.', days: 2, status: 'Critical', category: 'Normal', phone: '078...' },
         { name: 'Divine I.', days: 5, status: 'Warning', category: 'Student', phone: '079...' },

@@ -83,7 +83,12 @@ export function MemberDetailsModal({ member, onClose, onDelete }) {
 
                     <div className="space-y-6">
                         <div>
-                            <h2 className="text-2xl font-bold text-text tracking-tight leading-none mb-1">{member.full_name}</h2>
+                            <div className="flex items-center gap-3 mb-1">
+                                <h2 className="text-2xl font-bold text-text tracking-tight leading-none">{member.full_name}</h2>
+                                <span className="text-[10px] font-black text-accent bg-accent/5 px-2 py-1 rounded-xl border border-accent/10 tabular-nums">
+                                    {member.member_code || '---'}
+                                </span>
+                            </div>
                             <p className="text-[10px] font-bold text-text/40 uppercase tracking-[0.2em]">{member.category}</p>
                         </div>
 

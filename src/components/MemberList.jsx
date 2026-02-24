@@ -7,15 +7,16 @@ import { MemberDetailsModal } from './MemberDetailsModal';
 import { useMembers } from '../lib/data-hooks';
 import { confirmToast } from '../lib/toast';
 
-export function MemberList({ onAddMember }) {
+export function MemberList({ onAddMember, branchId = null }) {
     const [search, setSearch] = useState('');
-    const { members, loading, deleteMember } = useMembers();
+    const { members, loading, deleteMember } = useMembers(branchId);
     const [selectedMember, setSelectedMember] = useState(null);
     const [menuOpenId, setMenuOpenId] = useState(null);
 
     const filteredMembers = members.filter(m =>
         m.full_name?.toLowerCase().includes(search.toLowerCase()) ||
-        m.phone?.toLowerCase().includes(search.toLowerCase())
+        m.phone?.toLowerCase().includes(search.toLowerCase()) ||
+        m.member_code?.toLowerCase().includes(search.toLowerCase())
     );
 
     const handleDelete = async (id, e) => {
@@ -86,6 +87,9 @@ export function MemberList({ onAddMember }) {
                                     {member.status === 'Active' && <ShieldCheck size={16} className="text-success" />}
                                 </div>
                                 <div className="flex items-center gap-3">
+                                    <span className="text-[10px] font-black text-accent bg-accent/5 px-2 py-0.5 rounded-lg border border-accent/10 tabular-nums">
+                                        {member.member_code || '---'}
+                                    </span>
                                     <span className="text-[9px] font-bold text-text/20 uppercase tracking-[0.15em]">{member.category}</span>
                                     <div className="w-1 h-1 bg-text/5 rounded-full" />
                                     <span className={cn(

@@ -11,6 +11,7 @@ import { FinanceReports } from './components/FinanceReports';
 import { ExpiryMonitoring } from './components/ExpiryMonitoring';
 import { TrainersSchedules } from './components/TrainersSchedules';
 import { FrontDeskDashboard } from './components/FrontDeskDashboard';
+import { Signup } from './components/Signup';
 import { useTheme } from './lib/useTheme';
 import { cn } from './lib/utils';
 import { supabase } from './lib/supabase';
@@ -22,6 +23,8 @@ function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showRegistration, setShowRegistration] = useState(false);
+  const [branches, setBranches] = useState([]);
+  const [selectedBranchId, setSelectedBranchId] = useState(''); // Empty string = 'All Branches'
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -48,10 +51,28 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (user) {
+      apiFetch('/branches')
+        .then(data => setBranches(data))
+        .catch(err => console.error('Fetch branches error:', err));
+    }
+  }, [user]);
+
   const fetchProfile = async (authUser) => {
     try {
       const profile = await apiFetch('/profile');
-      setUser({ email: authUser.email, role: profile?.role?.toLowerCase() || 'receptionist', id: authUser.id });
+      setUser({ 
+        email: authUser.email, 
+        role: profile?.role?.toLowerCase() || 'receptionist', 
+        id: authUser.id,
+        branch_id: profile?.branch_id
+      });
+      
+      // Auto-set branch for receptionists to ensure isolation in all components
+      if (profile?.role?.toLowerCase() === 'receptionist' && profile?.branch_id) {
+        setSelectedBranchId(profile.branch_id);
+      }
     } catch {
       setUser({ email: authUser.email, role: 'receptionist', id: authUser.id });
     }
@@ -74,6 +95,7 @@ function App() {
           paymentMethod: formData.paymentMethod,
           phone: formData.phone,
           email: formData.email,
+          branchId: formData.branchId,
         }),
       });
       setShowRegistration(false);
@@ -92,7 +114,7 @@ function App() {
     );
   }
 
-  if (!user && location.pathname !== '/login') {
+  if (!user && location.pathname !== '/login' && location.pathname !== '/signup') {
     return <Navigate to="/login" replace />;
   }
 
@@ -111,9 +133,21 @@ function App() {
           <div className="lg:pl-80 flex flex-col min-h-screen relative">
             <div className="fixed top-[-10%] right-[-10%] w-[500px] h-[500px] bg-primary/[0.03] dark:bg-primary/[0.08] rounded-full blur-[100px] pointer-events-none transition-all" />
             <div className="fixed bottom-[-5%] left-[5%] w-[400px] h-[400px] bg-accent/[0.04] dark:bg-accent/[0.1] rounded-full blur-[80px] pointer-events-none transition-all" />
-            <MobileHeader user={user} onLogout={handleLogout} />
+            <MobileHeader
+              user={user}
+              onLogout={handleLogout}
+              branches={branches}
+              selectedBranchId={selectedBranchId}
+              onBranchChange={setSelectedBranchId}
+            />
             <div className="hidden lg:block">
-              <TopNav user={user} onLogout={handleLogout} />
+              <TopNav
+                user={user}
+                onLogout={handleLogout}
+                branches={branches}
+                selectedBranchId={selectedBranchId}
+                onBranchChange={setSelectedBranchId}
+              />
             </div>
             <main className={cn(
               "flex-1 px-6 pt-32 pb-40 lg:pt-6 lg:pb-16 max-w-[1400px] mx-auto w-full relative z-10",
@@ -121,23 +155,28 @@ function App() {
             )}>
               <Routes>
                 <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login onLogin={() => { }} />} />
+                <Route path="/signup" element={<Signup />} />
                 <Route path="/dashboard" element={
-                  user.role === 'manager' ? <DashboardSnapshot /> : <FrontDeskDashboard onNavigate={(tab, subAction) => {
-                    navigate(`/${tab}`);
-                    if (subAction === 'register') setShowRegistration(true);
-                  }} />
+                  user.role === 'manager' ? (
+                    <DashboardSnapshot branchId={selectedBranchId} />
+                  ) : (
+                    <FrontDeskDashboard onNavigate={(tab, subAction) => {
+                      navigate(`/${tab}`);
+                      if (subAction === 'register') setShowRegistration(true);
+                    }} />
+                  )
                 } />
                 <Route path="/members" element={
                   showRegistration ? (
-                    <MembershipRegistration onComplete={handleRegister} />
+                    <MembershipRegistration user={user} onComplete={handleRegister} />
                   ) : (
-                    <MemberList onAddMember={() => setShowRegistration(true)} />
+                    <MemberList onAddMember={() => setShowRegistration(true)} branchId={selectedBranchId} />
                   )
                 } />
-                <Route path="/attendance" element={<AttendanceTracking />} />
-                <Route path="/finance" element={<FinanceReports />} />
-                <Route path="/expiry" element={user.role === 'manager' ? <ExpiryMonitoring /> : <Navigate to="/dashboard" />} />
-                <Route path="/trainers" element={user.role === 'manager' ? <TrainersSchedules /> : <Navigate to="/dashboard" />} />
+                <Route path="/attendance" element={<AttendanceTracking branchId={selectedBranchId} />} />
+                <Route path="/finance" element={<FinanceReports user={user} branchId={selectedBranchId} />} />
+                <Route path="/expiry" element={user.role === 'manager' ? <ExpiryMonitoring branchId={selectedBranchId} /> : <Navigate to="/dashboard" />} />
+                <Route path="/trainers" element={user.role === 'manager' ? <TrainersSchedules branchId={selectedBranchId} /> : <Navigate to="/dashboard" />} />
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />
               </Routes>
@@ -146,7 +185,13 @@ function App() {
           </div>
         </>
       )}
-      {!user && <Routes><Route path="*" element={<Login onLogin={() => { }} />} /></Routes>}
+      {!user && (
+        <Routes>
+          <Route path="/login" element={<Login onLogin={() => { }} />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      )}
       <Toaster
         position="top-center"
         toastOptions={{
