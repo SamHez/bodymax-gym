@@ -62,8 +62,12 @@ export function MemberDetailsModal({ member, onClose, onDelete }) {
                 {/* Content */}
                 <div className="px-8 pb-8 -mt-16 relative">
                     <div className="flex justify-between items-end mb-6">
-                        <div className="w-32 h-32 rounded-[2.5rem] bg-surface border-4 border-card shadow-xl flex items-center justify-center text-primary text-5xl font-black">
-                            <User size={64} strokeWidth={1.5} />
+                        <div className="w-32 h-32 rounded-[2.5rem] bg-surface border-4 border-card shadow-xl flex items-center justify-center text-primary overflow-hidden">
+                            {member.photo_url ? (
+                                <img src={member.photo_url} alt={member.full_name} className="w-full h-full object-cover" />
+                            ) : (
+                                <User size={64} strokeWidth={1.5} className="text-5xl" />
+                            )}
                         </div>
                         <div className="mb-2">
                             <div className={cn(

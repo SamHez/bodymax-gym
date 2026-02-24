@@ -45,6 +45,7 @@ export function ExpenseTracker({ branchId = null, user, onSync }) {
             setExpenses(data);
         } catch (err) {
             console.error('Fetch expenses error:', err);
+            toast.error("Failed to load expenditure records");
         } finally {
             setLoading(false);
         }

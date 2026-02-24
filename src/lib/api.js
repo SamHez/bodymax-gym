@@ -13,7 +13,7 @@ const BASE = USE_LOCAL_BACKEND
 export async function apiFetch(endpoint, options = {}) {
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;
-
+1
     const res = await fetch(`${BASE}${endpoint}`, {
         ...options,
         headers: {
