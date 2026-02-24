@@ -1,7 +1,9 @@
 import { supabase } from './supabase';
 
-const IS_LOCAL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const BASE = IS_LOCAL
+// Set to true to test against local backend (python app.py)
+const USE_LOCAL_BACKEND = false;
+
+const BASE = USE_LOCAL_BACKEND
     ? 'http://localhost:5000/api'
     : 'https://bodymax-backend.onrender.com/api';
 
