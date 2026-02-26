@@ -60,10 +60,16 @@ export function MemberDetailsModal({ member, onClose, onDelete }) {
                 {/* Content */}
                 <div className="px-8 pb-8 -mt-16 relative">
                     <div className="flex justify-between items-end mb-6">
-                        <div className="w-32 h-32 rounded-[2.5rem] bg-surface border-4 border-card shadow-xl flex items-center justify-center text-primary text-5xl font-black">
-                            <User size={64} strokeWidth={1.5} />
+                        <div className="w-32 h-32 rounded-[2.5rem] bg-surface border-4 border-card shadow-xl flex items-center justify-center text-primary text-5xl font-black overflow-hidden relative">
+                            {member.picture_url ? (
+                                <img src={member.picture_url} alt={member.full_name} className="w-full h-full object-cover" />
+                            ) : (
+                                <User size={64} strokeWidth={1.5} />
+                            )}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
                         </div>
-                        <div className="mb-2">
+                        <div className="mb-2 text-right">
+                            <p className="text-[10px] font-mono font-bold text-primary mb-1 tracking-widest uppercase">{member.member_code || 'NO-CODE'}</p>
                             <div className={cn(
                                 "flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border mb-2 w-fit ml-auto",
                                 member.status === 'Active' ? "bg-success/10 text-success border-success/20" :

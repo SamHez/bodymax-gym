@@ -17,17 +17,14 @@ import { cn } from '../lib/utils';
 
 import { NavLink } from 'react-router-dom';
 
-export function Sidebar({ activeTab, user, onLogout }) {
+export function Sidebar({ activeTab, user, onLogout, isCollapsed, onToggleCollapse }) {
     const { theme, toggleTheme } = useTheme();
 
-    // Role-based tabs
     const allTabs = [
         { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', role: 'both' },
         { id: 'members', icon: Users, label: 'Members', path: '/members', role: 'both' },
         { id: 'attendance', icon: UserCheck, label: 'Attendance', path: '/attendance', role: 'both' },
         { id: 'finance', icon: CreditCard, label: 'Finance', path: '/finance', role: 'both' },
-        // { id: 'trainers', icon: Activity, label: 'Trainers', path: '/trainers', role: 'manager' },
-        // { id: 'expiry', icon: Bell, label: 'Expiry', path: '/expiry', role: 'manager' },
     ];
 
     const filteredTabs = allTabs.filter(tab =>
@@ -35,18 +32,28 @@ export function Sidebar({ activeTab, user, onLogout }) {
     );
 
     return (
-        <aside className="hidden lg:flex flex-col w-80 fixed left-0 top-0 bottom-0 bg-card border-r border-text/5 z-50 transition-all duration-300">
+        <aside className={cn(
+            "hidden lg:flex flex-col fixed left-0 top-0 bottom-0 bg-card border-r border-text/5 z-50 transition-all duration-300",
+            isCollapsed ? "w-20" : "w-64"
+        )}>
+            {/* Collapse Toggle */}
+            <button
+                onClick={onToggleCollapse}
+                className="absolute -right-4 top-10 w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center shadow-premium hover:scale-110 active:scale-95 transition-all z-10"
+            >
+                {isCollapsed ? <ChevronRight size={14} strokeWidth={3} /> : <ChevronRight size={14} strokeWidth={3} className="rotate-180" />}
+            </button>
+
             {/* Brand Header */}
-            <div className="p-10 pb-12">
-                <div className="flex items-center gap-4 mb-2">
-                    <img src={logo} alt="BodyMax Gym" className="h-10 w-auto" />
-                    <h2 className="text-text font-bold text-1xl tracking-tighter">BODYMAX GYM</h2>
+            <div className={cn("p-8 transition-all", isCollapsed ? "px-5" : "pb-10")}>
+                <div className="flex items-center gap-3 mb-2 overflow-hidden whitespace-nowrap">
+                    <img src={logo} alt="BodyMax Gym" className="h-8 w-auto flex-shrink-0" />
+                    {!isCollapsed && <h2 className="text-text font-bold text-lg tracking-tighter">BODYMAX</h2>}
                 </div>
-                <p className="hidden text-accent text-[10px] font-bold uppercase tracking-[0.4em] ml-1">Gym Suite</p>
             </div>
 
             {/* Navigation Links */}
-            <nav className="flex-1 px-6 space-y-2">
+            <nav className={cn("flex-1 space-y-2 px-6", isCollapsed && "px-4")}>
                 {filteredTabs.map((tab) => {
                     const Icon = tab.icon;
                     return (
@@ -54,25 +61,25 @@ export function Sidebar({ activeTab, user, onLogout }) {
                             key={tab.id}
                             to={tab.path}
                             className={({ isActive }) => cn(
-                                "w-full flex items-center gap-5 px-6 py-4 rounded-3xl transition-all duration-300 group relative",
+                                "w-full flex items-center rounded-3xl transition-all duration-300 group relative",
+                                isCollapsed ? "justify-center p-4" : "gap-5 px-6 py-4",
                                 isActive
                                     ? "bg-primary text-white shadow-premium"
                                     : "text-text/40 hover:text-text hover:bg-surface"
                             )}
+                            title={isCollapsed ? tab.label : ''}
                         >
                             {({ isActive }) => (
                                 <>
-                                    <Icon size={20} className={cn("transition-transform group-hover:scale-110", isActive && "text-accent")} />
-                                    <span className="font-bold text-sm tracking-tight">{tab.label}</span>
-                                    {isActive && <ChevronRight size={16} className="ml-auto opacity-50" />}
+                                    <Icon size={20} className={cn("transition-transform group-hover:scale-110 flex-shrink-0", isActive && "text-accent")} />
+                                    {!isCollapsed && <span className="font-bold text-sm tracking-tight whitespace-nowrap">{tab.label}</span>}
+                                    {!isCollapsed && isActive && <ChevronRight size={16} className="ml-auto opacity-50" />}
                                 </>
                             )}
                         </NavLink>
                     );
                 })}
             </nav>
-
-            {/* Tools & Persistence - MOVED TO TOPNAV */}
         </aside>
     );
 }

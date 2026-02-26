@@ -75,14 +75,19 @@ export function MemberList({ onAddMember }) {
                         onClick={() => setSelectedMember(member)}
                     >
                         <div className="flex items-center gap-6">
-                            <div className="w-16 h-16 rounded-[2rem] bg-surface flex items-center justify-center text-text/10 group-hover:bg-primary/5 group-hover:text-primary transition-all duration-700">
-                                <User size={24} strokeWidth={2.5} />
+                            <div className="w-16 h-16 rounded-[1.5rem] bg-surface flex items-center justify-center text-text/10 group-hover:bg-primary/5 group-hover:text-primary transition-all duration-700 overflow-hidden border border-text/5">
+                                {member.picture_url ? (
+                                    <img src={member.picture_url} alt={member.full_name} className="w-full h-full object-cover" />
+                                ) : (
+                                    <User size={24} strokeWidth={2.5} />
+                                )}
                             </div>
                             <div className="space-y-1">
                                 <div className="flex items-center gap-3">
                                     <p className="text-text font-bold text-lg tracking-tighter leading-none">{member.full_name}</p>
                                     {member.status === 'Active' && <ShieldCheck size={16} className="text-success" />}
                                 </div>
+                                <p className="text-[10px] font-mono font-bold text-accent/60 tracking-tight uppercase">{member.member_code || 'NO-CODE'}</p>
                                 <div className="flex items-center gap-3">
                                     <span className="text-[9px] font-bold text-text/20 uppercase tracking-[0.15em]">{member.category}</span>
                                     <div className="w-1 h-1 bg-text/5 rounded-full" />

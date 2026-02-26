@@ -10,6 +10,8 @@ drop table if exists public.profiles cascade;
 create table public.members (
 
     id uuid default uuid_generate_v4() primary key,
+    member_code text unique,
+    branch_code text,
     full_name text not null,
     phone text,
     email text,
@@ -18,6 +20,7 @@ create table public.members (
     start_date date not null default current_date,
     expiry_date date not null,
     status text not null default 'Active' check (status in ('Active', 'Expiring Soon', 'Expired')),
+    picture_url text, -- Base64 or URL
     group_id uuid, -- For Group Membership linking
     created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );

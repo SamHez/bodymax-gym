@@ -19,6 +19,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showRegistration, setShowRegistration] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -63,15 +64,24 @@ function App() {
 
   const handleRegister = async (formData) => {
     try {
-      // 1. Create Member
+      // 1. Generate Unique Member Code
+      const year = new Date().getFullYear();
+      const random = Math.floor(1000 + Math.random() * 9000);
+      const memberCode = `BM-${formData.branchCode}-${year}-${random}`;
+
+      // 2. Create Member
       const { data: member, error: memberError } = await supabase
         .from('members')
         .insert([{
+          member_code: memberCode,
+          branch_code: formData.branchCode,
           full_name: formData.fullName,
+          phone: formData.phone,
           category: formData.category,
           duration: formData.duration,
+          picture_url: formData.picture,
           start_date: new Date().toISOString().split('T')[0],
-          expiry_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Placeholder 1 month
+          expiry_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
           status: 'Active'
         }])
         .select()
@@ -79,12 +89,11 @@ function App() {
 
       if (memberError) throw memberError;
 
-      // 2. Clear Registration State
       setShowRegistration(false);
       navigate('/members');
 
       // 3. Create initial payment
-      const basePrice = 30000; // Simplified for this logic
+      const basePrice = 30000;
       await supabase
         .from('payments')
         .insert([{
@@ -95,7 +104,7 @@ function App() {
 
     } catch (error) {
       console.error("Registration Error:", error.message);
-      alert("Failed to register member. Check logs.");
+      alert("Failed to register member: " + error.message);
     }
   };
 
@@ -122,20 +131,25 @@ function App() {
             onTabChange={(tab) => navigate(`/${tab}`)}
             user={user}
             onLogout={handleLogout}
+            isCollapsed={isSidebarCollapsed}
+            onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           />
-          <div className="lg:pl-80 flex flex-col min-h-screen relative">
-            <div className="fixed top-[-10%] right-[-10%] w-[500px] h-[500px] bg-primary/[0.03] dark:bg-primary/[0.08] rounded-full blur-[100px] pointer-events-none transition-all" />
-            <div className="fixed bottom-[-5%] left-[5%] w-[400px] h-[400px] bg-accent/[0.04] dark:bg-accent/[0.1] rounded-full blur-[80px] pointer-events-none transition-all" />
+          <div className={cn(
+            "flex flex-col min-h-screen relative transition-all duration-300 gap-6",
+            isSidebarCollapsed ? "lg:pl-28" : "lg:pl-72"
+          )}>
+            <div className="fixed top-[-15%] right-[-10%] w-[600px] h-[600px] bg-primary/[0.08] dark:bg-primary/[0.15] rounded-full blur-[120px] pointer-events-none transition-all animate-pulse duration-[10s]" />
+            <div className="fixed bottom-[-10%] left-[5%] w-[500px] h-[500px] bg-accent/[0.1] dark:bg-accent/[0.2] rounded-full blur-[100px] pointer-events-none transition-all animate-pulse duration-[8s]" />
             <MobileHeader user={user} onLogout={handleLogout} />
             <div className="hidden lg:block">
               <TopNav user={user} onLogout={handleLogout} />
             </div>
             <main className={cn(
-              "flex-1 px-6 pt-32 pb-40 lg:pt-6 lg:pb-16 max-w-[1400px] mx-auto w-full relative z-10",
+              "flex-1 px-10 md:px-16 lg:px-20 pt-32 pb-40 lg:pt-10 lg:pb-16 max-w-[1800px] w-full relative z-10",
               "animate-in fade-in duration-700"
             )}>
               <Routes>
-                <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login onLogin={() => { }} />} />
+                <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login onLogin={setUser} />} />
                 <Route path="/dashboard" element={
                   user.role === 'manager' ? <DashboardSnapshot /> : <FrontDeskDashboard onNavigate={(tab, subAction) => {
                     navigate(`/${tab}`);
@@ -161,7 +175,7 @@ function App() {
           </div>
         </>
       )}
-      {!user && <Routes><Route path="*" element={<Login onLogin={() => { }} />} /></Routes>}
+      {!user && <Routes><Route path="*" element={<Login onLogin={setUser} />} /></Routes>}
     </div>
   );
 }

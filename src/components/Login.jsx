@@ -64,7 +64,7 @@ export function Login({ onLogin }) {
                         <img src={logo} alt="BodyMax Gym" className="h-14 w-auto" />
                     </div>
                     <h1 className="text-4xl font-black tracking-tight text-text mb-2 font-sans">
-                        BODYMAX <span className="text-accent">GYM</span>
+                        BODYMAX <span className="text-primary">GYM</span>
                     </h1>
                     <p className="text-text/40 font-bold uppercase tracking-[0.3em] text-[10px]">Management Suite</p>
                 </div>

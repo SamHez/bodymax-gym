@@ -117,7 +117,7 @@ export function AttendanceTracking() {
                 ) : filteredMembers.map(member => (
                     <Card key={member.id} className={cn(
                         "p-3 md:p-4 md:pr-8 flex items-center justify-between group transition-all duration-500",
-                        member.status === 'Expired' ? "border-error/20 bg-error/[0.02]" : "hover:border-accent/30"
+                        member.status === 'Expired' ? "border-error/20 bg-error/[0.02]" : "hover:border-primary/30"
                     )}>
                         <div className="flex items-center gap-4 md:gap-10">
                             <div className={cn(
@@ -140,7 +140,7 @@ export function AttendanceTracking() {
                                     <span className={cn(
                                         "text-[8px] md:text-[10px] font-bold uppercase tracking-[0.1em] md:tracking-[0.2em] ",
                                         member.status === 'Active' ? "text-success" :
-                                            member.status === 'Expired' ? "text-error" : "text-accent"
+                                            member.status === 'Expired' ? "text-error" : "text-primary"
                                     )}>{member.status} {member.category} TIER</span>
                                     <div className="hidden md:block w-1.5 h-1.5 bg-text/5 rounded-full" />
                                     {/*<span className="hidden md:block text-text/20 text-[10px] font-bold uppercase tracking-widest tabular-nums">AUTH #{member.id}X924</span>*/}

@@ -136,14 +136,14 @@ export function FrontDeskDashboard({ onNavigate }) {
                     </button>
                     <button
                         onClick={() => onNavigate('attendance')}
-                        className="flex items-center gap-3 bg-primary text-surface px-6 py-4 rounded-3xl font-bold uppercase tracking-widest text-xs hover:scale-105 active:scale-95 transition-all shadow-premium"
+                        className="flex items-center gap-3 bg-text/5 text-text px-6 py-4 rounded-3xl font-bold uppercase tracking-widest text-xs hover:bg-text/10 transition-all border border-text/5"
                     >
                         <Calendar size={18} strokeWidth={2.5} />
                         Quick Check-in
                     </button>
                     <button
                         onClick={() => onNavigate('members', 'register')}
-                        className="flex items-center gap-3 bg-accent text-surface px-6 py-4 rounded-3xl font-bold uppercase tracking-widest text-xs hover:scale-105 active:scale-95 transition-all shadow-gold"
+                        className="flex items-center gap-3 bg-primary text-surface px-6 py-4 rounded-3xl font-bold uppercase tracking-widest text-xs hover:scale-105 active:scale-95 transition-all shadow-xl shadow-primary/20"
                     >
                         <Plus size={18} strokeWidth={3} />
                         New Member
@@ -154,7 +154,7 @@ export function FrontDeskDashboard({ onNavigate }) {
             {/* Real-time Indicators */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {quickStats.map((stat, i) => (
-                    <StatCard key={i} {...stat} />
+                    <StatCard key={i} {...stat} featured={true} />
                 ))}
             </div>
 

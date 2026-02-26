@@ -34,7 +34,7 @@ export function DashboardSnapshot() {
             {/* KPI Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {stats.map((stat, i) => (
-                    <StatCard key={i} {...stat} />
+                    <StatCard key={i} {...stat} featured={i < 2} colorClass={i === 1 ? "text-primary" : "text-text"} />
                 ))}
             </div>
 
@@ -50,11 +50,11 @@ export function DashboardSnapshot() {
                                     <div
                                         className={cn(
                                             "w-full rounded-2xl transition-all duration-[1500ms] relative group min-h-[2px]",
-                                            i === data.length - 1 ? "bg-accent shadow-gold" : "bg-text/10 dark:bg-white/10"
+                                            i === data.length - 1 ? "bg-primary shadow-xl shadow-primary/20" : "bg-text/10 dark:bg-white/10"
                                         )}
                                         style={{ height: `${(item.revenue / maxRev) * 100}%` }}
                                     >
-                                        <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-text text-surface dark:bg-accent dark:text-surface text-[9px] font-bold px-2 py-1.5 rounded-xl transition-all shadow-premium whitespace-nowrap z-20">
+                                        <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-primary text-surface text-[9px] font-bold px-2 py-1.5 rounded-xl transition-all shadow-premium whitespace-nowrap z-20">
                                             {Math.round(item.revenue)}k
                                         </div>
                                     </div>
@@ -71,10 +71,10 @@ export function DashboardSnapshot() {
                     <div className="relative w-40 h-40 flex items-center justify-center">
                         <svg className="w-full h-full -rotate-90">
                             <circle cx="80" cy="80" r="70" stroke="currentColor" strokeWidth="12" fill="transparent" className="text-text/[0.03]" />
-                            <circle cx="80" cy="80" r="70" stroke="currentColor" strokeWidth="12" fill="transparent" strokeDasharray="440" strokeDashoffset="110" className="text-accent" />
+                            <circle cx="80" cy="80" r="70" stroke="currentColor" strokeWidth="12" fill="transparent" strokeDasharray="440" strokeDashoffset="110" className="text-primary" />
                         </svg>
                         <div className="absolute inset-0 flex flex-col items-center justify-center">
-                            <span className="text-4xl font-bold  tracking-tighter leading-none">75%</span>
+                            <span className="text-4xl font-bold  tracking-tighter leading-none text-primary">75%</span>
                             <span className="text-[9px] font-bold uppercase tracking-widest text-text/20 mt-1">Capacity</span>
                         </div>
                     </div>
@@ -90,12 +90,12 @@ export function DashboardSnapshot() {
                     <div className="absolute top-0 right-0 p-4 opacity-[0.02] group-hover:scale-150 transition-transform duration-1000">
                         <Smartphone size={200} />
                     </div>
-                    <div className="w-20 h-20 rounded-[2rem] bg-accent/10 border border-accent/20 flex items-center justify-center text-accent group-hover:rotate-12 transition-transform shadow-sm">
+                    <div className="w-20 h-20 rounded-[2rem] bg-primary/5 border border-primary/10 flex items-center justify-center text-primary group-hover:rotate-12 transition-transform shadow-sm">
                         <Smartphone size={32} strokeWidth={2.5} />
                     </div>
                     <div>
                         <h4 className="text-text font-bold text-xl mb-1 tracking-tight">Mobile Settlements</h4>
-                        <p className="text-text font-bold text-4xl tracking-tighter ">{(financeStats.mobileRevenue || 0).toLocaleString()} <span className="text-accent text-xs not- tracking-widest ml-1">RWF</span></p>
+                        <p className="text-text font-bold text-4xl tracking-tighter ">{(financeStats.mobileRevenue || 0).toLocaleString()} <span className="text-primary text-xs not- tracking-widest ml-1">RWF</span></p>
                     </div>
                 </Card>
                 <Card className="flex items-center gap-8 p-10 group overflow-hidden relative">
