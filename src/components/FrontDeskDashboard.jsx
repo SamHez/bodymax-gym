@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card, StatCard } from './Card';
-import { Users, UserPlus, Calendar, Activity, CheckCircle2, TrendingUp, Search, Plus } from 'lucide-react';
+import { Users, UserPlus, Calendar, Activity, CheckCircle2, TrendingUp, Search, Plus, Receipt } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 import { useAttendance, useMembers, useFinance } from '../lib/data-hooks';
@@ -106,7 +106,7 @@ export function FrontDeskDashboard({ onNavigate }) {
     const quickStats = [
         { label: "Today's Attendance", value: todayCount.toString(), icon: Users, trend: 0 },
         { label: "Total Members", value: members.length.toString(), icon: UserPlus, trend: 0 },
-        { label: "Daily Revenue", value: `RWF ${financeStats.revenue.toLocaleString()}`, icon: Activity, trend: 0 },
+        { label: "Net Daily Flow", value: `RWF ${(financeStats.dailyData?.[6]?.profit * 1000 || 0).toLocaleString()}`, icon: Activity, trend: 0 },
     ];
 
     const recentActivity = members.slice(0, 4).map((m, i) => ({
@@ -140,6 +140,13 @@ export function FrontDeskDashboard({ onNavigate }) {
                     >
                         <Calendar size={18} strokeWidth={2.5} />
                         Quick Check-in
+                    </button>
+                    <button
+                        onClick={() => onNavigate('expenses')}
+                        className="flex items-center gap-3 bg-text/5 text-text px-6 py-4 rounded-3xl font-bold uppercase tracking-widest text-xs hover:bg-text/10 transition-all border border-text/5"
+                    >
+                        <Receipt size={18} strokeWidth={2.5} />
+                        Log Expense
                     </button>
                     <button
                         onClick={() => onNavigate('members', 'register')}

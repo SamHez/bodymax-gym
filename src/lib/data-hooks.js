@@ -97,79 +97,117 @@ export function useAttendance() {
     return { todayCount, checkedInIds, checkIn, removeCheckIn, loading };
 }
 
+export function useExpenses() {
+    const [expenses, setExpenses] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchExpenses = async () => {
+        setLoading(true);
+        const { data, error } = await supabase
+            .from('expenses')
+            .select('*')
+            .order('expense_date', { ascending: false });
+
+        if (data) setExpenses(data);
+        setLoading(false);
+    };
+
+    useEffect(() => {
+        fetchExpenses();
+    }, []);
+
+    const addExpense = async (expense) => {
+        const { data: userData } = await supabase.auth.getUser();
+        const { data, error } = await supabase
+            .from('expenses')
+            .insert([{ ...expense, recorded_by: userData.user?.id }])
+            .select();
+
+        if (!error && data) {
+            setExpenses(prev => [data[0], ...prev]);
+            return true;
+        }
+        return false;
+    };
+
+    return { expenses, loading, addExpense, refresh: fetchExpenses };
+}
+
 export function useFinance() {
-    const [stats, setStats] = useState({ revenue: 0, transactions: 0, breakdown: [] });
+    const [stats, setStats] = useState({ revenue: 0, expenses: 0, netProfit: 0, transactions: 0, breakdown: [] });
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         async function fetchFinance() {
-            setLoading(true);
-            const { data, error } = await supabase
-                .from('payments')
-                .select('*');
+            const { data: payData } = await supabase.from('payments').select('*');
+            const { data: expData } = await supabase.from('expenses').select('*');
 
-            if (data) {
-                const total = data.reduce((sum, p) => sum + Number(p.amount), 0);
+            if (payData && expData) {
+                const totalRev = payData.reduce((sum, p) => sum + Number(p.amount), 0);
+                const totalExp = expData.reduce((sum, e) => sum + Number(e.amount), 0);
 
-                // Calculate monthly stats for the last 10 months
+                // Monthly stats
                 const months = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
                 const monthlyData = new Array(10).fill(0).map((_, i) => {
                     const date = new Date();
-                    date.setDate(1); // Set to 1st to avoid end-of-month overflow issues
+                    date.setDate(1);
                     date.setMonth(date.getMonth() - (9 - i));
                     const monthIndex = date.getMonth();
                     const year = date.getFullYear();
 
-                    const monthRevenue = data
-                        .filter(p => {
-                            if (!p.transaction_date) return false;
-                            const pDate = new Date(p.transaction_date);
-                            return pDate.getUTCMonth() === monthIndex && pDate.getUTCFullYear() === year;
-                        })
+                    const monthRev = payData
+                        .filter(p => p.transaction_date && new Date(p.transaction_date).getUTCMonth() === monthIndex && new Date(p.transaction_date).getUTCFullYear() === year)
                         .reduce((sum, p) => sum + Number(p.amount), 0);
+
+                    const monthExp = expData
+                        .filter(e => e.expense_date && new Date(e.expense_date).getUTCMonth() === monthIndex && new Date(e.expense_date).getUTCFullYear() === year)
+                        .reduce((sum, e) => sum + Number(e.amount), 0);
 
                     return {
                         month: months[monthIndex],
-                        revenue: monthRevenue / 1000 // In 'k'
+                        revenue: monthRev / 1000,
+                        expenses: monthExp / 1000,
+                        profit: (monthRev - monthExp) / 1000
                     };
                 });
 
-                // Calculate method stats
-                const mobileRevenue = data
-                    .filter(p => p.payment_method === 'Mobile Money')
-                    .reduce((sum, p) => sum + Number(p.amount), 0);
-                const cashRevenue = data
-                    .filter(p => p.payment_method === 'Cash')
-                    .reduce((sum, p) => sum + Number(p.amount), 0);
-
-                // Calculate daily stats for the last 7 days
+                // Daily stats
                 const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                 const dailyData = new Array(7).fill(0).map((_, i) => {
                     const date = new Date();
-                    date.setDate(date.getDate() - (6 - i)); // Go back 6 days to today
+                    date.setDate(date.getDate() - (6 - i));
                     const dayIndex = date.getDay();
                     const dayDate = date.toISOString().split('T')[0];
 
-                    const dayRevenue = data
-                        .filter(p => {
-                            if (!p.transaction_date) return false;
-                            return p.transaction_date.startsWith(dayDate);
-                        })
+                    const dayRev = payData
+                        .filter(p => p.transaction_date?.startsWith(dayDate))
                         .reduce((sum, p) => sum + Number(p.amount), 0);
+
+                    const dayExp = expData
+                        .filter(e => e.expense_date?.startsWith(dayDate))
+                        .reduce((sum, e) => sum + Number(e.amount), 0);
 
                     return {
                         day: days[dayIndex],
-                        revenue: dayRevenue / 1000 // In 'k'
+                        revenue: dayRev / 1000,
+                        expenses: dayExp / 1000,
+                        profit: (dayRev - dayExp) / 1000
                     };
                 });
 
                 setStats({
-                    revenue: total,
-                    transactions: data.length,
+                    revenue: totalRev,
+                    expenses: totalExp,
+                    netProfit: totalRev - totalExp,
+                    transactions: payData.length,
+                    mobileRevenue: payData.filter(p => p.payment_method === 'Mobile Money').reduce((sum, p) => sum + Number(p.amount), 0),
+                    cashRevenue: payData.filter(p => p.payment_method === 'Cash').reduce((sum, p) => sum + Number(p.amount), 0),
                     monthlyData,
-                    mobileRevenue,
-                    cashRevenue,
-                    dailyData
+                    dailyData,
+                    expenseCategories: expData.reduce((acc, e) => {
+                        acc[e.category] = (acc[e.category] || 0) + Number(e.amount);
+                        return acc;
+                    }, {})
                 });
             }
             setLoading(false);

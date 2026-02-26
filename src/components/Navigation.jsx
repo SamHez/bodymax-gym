@@ -5,11 +5,12 @@ import {
     UserCheck,
     CreditCard,
     Activity,
-    LogOut,
     User,
     ChevronRight,
     Sun,
-    Moon
+    Moon,
+    Receipt,
+    LogOut
 } from 'lucide-react';
 import { useTheme } from '../lib/useTheme';
 import logo from '../assets/logo.png';
@@ -24,6 +25,7 @@ export function Sidebar({ activeTab, user, onLogout, isCollapsed, onToggleCollap
         { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', role: 'both' },
         { id: 'members', icon: Users, label: 'Members', path: '/members', role: 'both' },
         { id: 'attendance', icon: UserCheck, label: 'Attendance', path: '/attendance', role: 'both' },
+        { id: 'expenses', icon: Receipt, label: 'Expenses', path: '/expenses', role: 'both' },
         { id: 'finance', icon: CreditCard, label: 'Finance', path: '/finance', role: 'both' },
     ];
 
@@ -33,8 +35,8 @@ export function Sidebar({ activeTab, user, onLogout, isCollapsed, onToggleCollap
 
     return (
         <aside className={cn(
-            "hidden lg:flex flex-col fixed left-0 top-0 bottom-0 bg-card border-r border-text/5 z-50 transition-all duration-300",
-            isCollapsed ? "w-20" : "w-64"
+            "hidden lg:flex flex-col fixed left-0 top-0 bottom-0 bg-card border-r border-text/5 z-50 transition-all duration-500 overflow-visible liquid-glass",
+            isCollapsed ? "w-20" : "w-72"
         )}>
             {/* Collapse Toggle */}
             <button
@@ -45,15 +47,15 @@ export function Sidebar({ activeTab, user, onLogout, isCollapsed, onToggleCollap
             </button>
 
             {/* Brand Header */}
-            <div className={cn("p-8 transition-all", isCollapsed ? "px-5" : "pb-10")}>
-                <div className="flex items-center gap-3 mb-2 overflow-hidden whitespace-nowrap">
-                    <img src={logo} alt="BodyMax Gym" className="h-8 w-auto flex-shrink-0" />
-                    {!isCollapsed && <h2 className="text-text font-bold text-lg tracking-tighter">BODYMAX</h2>}
+            <div className={cn("p-10 transition-all", isCollapsed ? "px-5" : "pb-12")}>
+                <div className="flex items-center gap-4 mb-2 overflow-hidden whitespace-nowrap">
+                    <img src={logo} alt="BodyMax Gym" className="h-10 w-auto flex-shrink-0 drop-shadow-2xl" />
+                    {!isCollapsed && <h2 className="text-text font-black text-xl tracking-[0.2em] uppercase">BODY<span className="text-primary italic">MAX</span></h2>}
                 </div>
             </div>
 
             {/* Navigation Links */}
-            <nav className={cn("flex-1 space-y-2 px-6", isCollapsed && "px-4")}>
+            <nav className={cn("flex-1 space-y-1 px-6", isCollapsed && "px-4")}>
                 {filteredTabs.map((tab) => {
                     const Icon = tab.icon;
                     return (
@@ -61,19 +63,32 @@ export function Sidebar({ activeTab, user, onLogout, isCollapsed, onToggleCollap
                             key={tab.id}
                             to={tab.path}
                             className={({ isActive }) => cn(
-                                "w-full flex items-center rounded-3xl transition-all duration-300 group relative",
-                                isCollapsed ? "justify-center p-4" : "gap-5 px-6 py-4",
+                                "w-full flex items-center rounded-2xl transition-all duration-500 group relative overflow-hidden",
+                                isCollapsed ? "justify-center p-5" : "gap-6 px-8 py-5",
                                 isActive
-                                    ? "bg-primary text-white shadow-premium"
-                                    : "text-text/40 hover:text-text hover:bg-surface"
+                                    ? "bg-primary text-white shadow-[0_20px_40px_rgba(30,136,229,0.3)] scale-[0.9]"
+                                    : "text-text/30 hover:text-primary hover:bg-primary/5"
                             )}
-                            title={isCollapsed ? tab.label : ''}
                         >
                             {({ isActive }) => (
                                 <>
-                                    <Icon size={20} className={cn("transition-transform group-hover:scale-110 flex-shrink-0", isActive && "text-accent")} />
-                                    {!isCollapsed && <span className="font-bold text-sm tracking-tight whitespace-nowrap">{tab.label}</span>}
-                                    {!isCollapsed && isActive && <ChevronRight size={16} className="ml-auto opacity-50" />}
+                                    {/* Sidebar Hover Tooltip for Collapsed View */}
+                                    {isCollapsed && (
+                                        <div className="absolute left-[calc(100%+1rem)] bg-primary text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest opacity-0 translate-x-[-10px] pointer-events-none group-hover:opacity-100 group-hover:translate-x-0 transition-all z-[100] shadow-premium whitespace-nowrap">
+                                            {tab.label}
+                                            <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-primary rotate-45" />
+                                        </div>
+                                    )}
+
+                                    <Icon
+                                        size={22}
+                                        strokeWidth={isActive ? 3 : 2}
+                                        className={cn("transition-all duration-500 flex-shrink-0", isActive ? "scale-110 drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]" : "group-hover:scale-110 group-hover:text-primary")}
+                                    />
+                                    {!isCollapsed && <span className="font-black text-xs uppercase tracking-[0.15em] whitespace-nowrap">{tab.label}</span>}
+                                    {!isCollapsed && isActive && (
+                                        <div className="ml-auto w-1.5 h-1.5 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,1)]" />
+                                    )}
                                 </>
                             )}
                         </NavLink>
@@ -91,7 +106,7 @@ export function TopNav({ user, onLogout }) {
         <header className="sticky top-0 z-40 bg-surface/80 backdrop-blur-md border-b border-text/5 px-6 py-4 flex items-center justify-end gap-6 transition-all">
             <button
                 onClick={toggleTheme}
-                className="p-3 bg-card border border-text/5 rounded-2xl shadow-premium text-text/40 hover:text-accent transition-all"
+                className="p-3 bg-card border border-text/5 rounded-2xl shadow-premium text-text/40 hover:text-primary transition-all"
             >
                 {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
             </button>
@@ -141,7 +156,7 @@ export function MobileHeader({ user, onLogout }) {
                         onClick={() => setIsMenuOpen(!isMenuOpen)}
                         className={cn(
                             "relative p-3 bg-card border border-text/5 rounded-2xl shadow-premium transition-all",
-                            isMenuOpen ? "text-accent border-accent/20" : "text-text/40"
+                            isMenuOpen ? "text-primary border-primary/20" : "text-text/40"
                         )}
                     >
                         <User size={18} />

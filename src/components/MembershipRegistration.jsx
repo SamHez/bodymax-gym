@@ -1,9 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { Card } from './Card';
-import { UserPlus, Check, Shield, Camera, Phone, User as UserIcon, MapPin, CreditCard, Calendar } from 'lucide-react';
+import { UserPlus, Check, Shield, Camera, Phone, User as UserIcon, MapPin, CreditCard, Calendar, ChevronLeft } from 'lucide-react';
 import { cn } from '../lib/utils';
 
-export function MembershipRegistration({ onComplete }) {
+export function MembershipRegistration({ onComplete, onCancel }) {
     const [formData, setFormData] = useState({
         fullName: '',
         phone: '',
@@ -68,16 +68,24 @@ export function MembershipRegistration({ onComplete }) {
 
     return (
         <div className="space-y-10 max-w-5xl mx-auto pb-20">
-            {/* Header */}
-            <div className="flex items-center gap-6 mb-8">
-                <div className="w-20 h-20 rounded-[2.5rem] bg-accent/10 text-accent flex items-center justify-center shadow-premium animate-float">
-                    <UserPlus size={40} />
-                </div>
-                <div>
-                    <h2 className="text-text font-bold text-4xl md:text-5xl tracking-tighter leading-none uppercase">NEW ENROLLMENT</h2>
-                    <div className="flex items-center gap-3 mt-2">
-                        <div className="h-1 w-20 bg-accent rounded-full" />
-                        <p className="text-text/30 text-[11px] font-bold uppercase tracking-[0.5em]">Unified Registration Process</p>
+            {/* Header with Back Button */}
+            <div className="flex flex-col gap-6 mb-8">
+                <button
+                    onClick={onCancel}
+                    className="flex items-center gap-2 text-primary font-black text-[10px] uppercase tracking-[0.3em] hover:translate-x-[-10px] transition-all self-start"
+                >
+                    <ChevronLeft size={16} strokeWidth={3} /> Return to Directory
+                </button>
+                <div className="flex items-center gap-6">
+                    <div className="w-20 h-20 rounded-[2.5rem] bg-accent/10 text-accent flex items-center justify-center shadow-premium animate-float">
+                        <UserPlus size={40} />
+                    </div>
+                    <div>
+                        <h2 className="text-text font-bold text-4xl md:text-5xl tracking-tighter leading-none uppercase">NEW ENROLLMENT</h2>
+                        <div className="flex items-center gap-3 mt-2">
+                            <div className="h-1 w-20 bg-accent rounded-full" />
+                            <p className="text-text/30 text-[11px] font-bold uppercase tracking-[0.5em]">Unified Registration Process</p>
+                        </div>
                     </div>
                 </div>
             </div>

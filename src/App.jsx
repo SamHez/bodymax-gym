@@ -8,6 +8,7 @@ import { MembershipRegistration } from './components/MembershipRegistration';
 import { MemberList } from './components/MemberList';
 import { AttendanceTracking } from './components/AttendanceTracking';
 import { FinanceReports } from './components/FinanceReports';
+import ExpenseManagement from './components/ExpenseManagement';
 import { ExpiryMonitoring } from './components/ExpiryMonitoring';
 import { TrainersSchedules } from './components/TrainersSchedules';
 import { FrontDeskDashboard } from './components/FrontDeskDashboard';
@@ -158,13 +159,14 @@ function App() {
                 } />
                 <Route path="/members" element={
                   showRegistration ? (
-                    <MembershipRegistration onComplete={handleRegister} />
+                    <MembershipRegistration onComplete={handleRegister} onCancel={() => setShowRegistration(false)} />
                   ) : (
                     <MemberList onAddMember={() => setShowRegistration(true)} />
                   )
                 } />
                 <Route path="/attendance" element={<AttendanceTracking />} />
                 <Route path="/finance" element={<FinanceReports />} />
+                <Route path="/expenses" element={<ExpenseManagement user={user} />} />
                 <Route path="/expiry" element={user.role === 'manager' ? <ExpiryMonitoring /> : <Navigate to="/dashboard" />} />
                 <Route path="/trainers" element={user.role === 'manager' ? <TrainersSchedules /> : <Navigate to="/dashboard" />} />
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
