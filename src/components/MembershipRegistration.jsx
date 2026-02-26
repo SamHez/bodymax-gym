@@ -154,7 +154,7 @@ export function MembershipRegistration({ onComplete }) {
                                         className={cn(
                                             "py-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest border transition-all",
                                             formData.branchCode === b.code
-                                                ? "bg-accent/10 border-accent text-accent shadow-premium"
+                                                ? "bg-primary/10 border-primary text-primary shadow-premium"
                                                 : "bg-surface border-text/5 text-text/20 hover:text-text/40"
                                         )}
                                     >
@@ -177,11 +177,11 @@ export function MembershipRegistration({ onComplete }) {
                                         className={cn(
                                             "p-6 rounded-[2.5rem] text-left border-4 transition-all group flex flex-col justify-center gap-2",
                                             formData.category === c.name
-                                                ? "border-accent bg-accent/5 shadow-premium"
+                                                ? "border-primary bg-primary/5 shadow-premium"
                                                 : "border-text/5 bg-surface hover:border-text/10"
                                         )}
                                     >
-                                        <p className={cn("text-lg font-bold leading-none mb-1", formData.category === c.name ? "text-accent" : "text-text")}>{c.name}</p>
+                                        <p className={cn("text-lg font-bold leading-none mb-1", formData.category === c.name ? "text-primary" : "text-text")}>{c.name}</p>
                                         <p className="text-[9px] font-bold text-text/20 uppercase tracking-tighter leading-none">{c.desc}</p>
                                     </button>
                                 ))}
@@ -216,7 +216,7 @@ export function MembershipRegistration({ onComplete }) {
                         <div className="bg-surface border border-text/5 p-8 rounded-[2.5rem] relative overflow-hidden group shadow-inner">
                             <div className="text-center">
                                 <p className="text-text font-bold text-xl tracking-tighter mb-2 uppercase leading-none">{formData.fullName || 'NEW MEMBER'}</p>
-                                <p className="text-accent text-[11px] font-bold uppercase tracking-[0.5em] mb-6">{formData.category}</p>
+                                <p className="text-primary text-[11px] font-bold uppercase tracking-[0.5em] mb-6">{formData.category}</p>
 
                                 <div className="h-[2px] w-full bg-text/5 mb-6" />
 
@@ -234,15 +234,15 @@ export function MembershipRegistration({ onComplete }) {
                                     className={cn(
                                         "w-full p-6 rounded-3xl flex items-center gap-6 border-4 transition-all group",
                                         formData.paymentMethod === m
-                                            ? "border-accent bg-accent/5 shadow-premium"
+                                            ? "border-primary bg-primary/5 shadow-premium"
                                             : "border-text/5 bg-surface"
                                     )}
                                 >
                                     <div className={cn(
                                         "w-6 h-6 rounded-full border-4 flex items-center justify-center transition-all",
-                                        formData.paymentMethod === m ? "border-accent" : "border-text/10"
+                                        formData.paymentMethod === m ? "border-primary" : "border-text/10"
                                     )}>
-                                        {formData.paymentMethod === m && <div className="w-3 h-3 bg-accent rounded-full shadow-[0_0_15px_rgba(201,166,70,0.6)]" />}
+                                        {formData.paymentMethod === m && <div className="w-3 h-3 bg-primary rounded-full shadow-[0_0_15px_rgba(30,136,229,0.4)]" />}
                                     </div>
                                     <span className={cn("text-[11px] font-bold uppercase tracking-[0.2em]", formData.paymentMethod === m ? "text-text" : "text-text/20")}>{m}</span>
                                 </button>

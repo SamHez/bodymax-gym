@@ -29,29 +29,29 @@ export function MemberList({ onAddMember }) {
         <div className="space-y-10" onClick={() => setMenuOpenId(null)}>
             {/* Directory Header */}
             <div className="flex justify-between items-center bg-card p-6 md:p-10 rounded-[2.5rem] md:rounded-[3rem] border border-text/5 shadow-premium relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-accent/5 rounded-full blur-[80px]" />
+                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[80px]" />
                 <div>
-                    <h2 className="text-accent text-[9px] md:text-[10px] font-bold uppercase tracking-[0.4em] mb-1 leading-none ">Asset Database</h2>
+                    <h2 className="text-primary text-[9px] md:text-[10px] font-bold uppercase tracking-[0.4em] mb-1 leading-none ">Asset Database</h2>
                     <p className="text-text text-2xl md:text-4xl font-bold tracking-tighter leading-none uppercase">DIRECTORY</p>
                 </div>
 
                 <button
                     onClick={onAddMember}
-                    className="flex items-center gap-0 md:gap-4 p-4 md:px-8 md:py-5 bg-primary text-white rounded-2xl md:rounded-3xl shadow-premium hover:scale-105 active:scale-95 transition-all font-bold text-xs uppercase tracking-widest z-10"
+                    className="flex items-center gap-3 p-4 md:px-8 md:py-5 bg-primary text-white rounded-2xl md:rounded-3xl shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all font-bold text-xs uppercase tracking-widest z-10"
                 >
-                    <Plus size={20} strokeWidth={3} className="md:mr-0" />
-                    <span className="hidden md:inline">New Enrollment</span>
+                    <Plus size={20} strokeWidth={3} />
+                    <span className="hidden md:inline">Register New</span>
                 </button>
             </div>
 
-            {/* Tactical Search Interface - Full Width */}
+            {/* Tactical Search Interface */}
             <Card className="p-2 border border-text/5 shadow-premium group">
                 <div className="relative">
-                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-text/20 group-focus-within:text-accent transition-colors w-4 h-4" strokeWidth={2.5} />
+                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-text/20 group-focus-within:text-primary transition-colors w-4 h-4" strokeWidth={2.5} />
                     <input
                         type="text"
-                        placeholder="SEARCH MEMBERS..."
-                        className="w-full bg-surface/50 border-none rounded-[1.5rem] py-3 pl-14 pr-6 text-text font-bold text-sm focus:ring-4 focus:ring-accent/10 placeholder:text-text/10 transition-all font-sans uppercase tracking-widest"
+                        placeholder="SEARCH MEMBERS BY NAME OR CODE..."
+                        className="w-full bg-surface/50 border-none rounded-[1.5rem] py-3 pl-14 pr-6 text-text font-bold text-sm focus:ring-4 focus:ring-primary/10 placeholder:text-text/10 transition-all font-sans uppercase tracking-widest outline-none"
                         value={search}
                         onChange={e => setSearch(e.target.value)}
                     />
@@ -71,7 +71,7 @@ export function MemberList({ onAddMember }) {
                 ) : filteredMembers.map(member => (
                     <Card
                         key={member.id}
-                        className="p-4 pr-4 flex items-center justify-between group hover:border-accent/30 transition-all relative overflow-visible cursor-pointer"
+                        className="p-4 pr-4 flex items-center justify-between group hover:border-primary/30 transition-all relative overflow-visible cursor-pointer"
                         onClick={() => setSelectedMember(member)}
                     >
                         <div className="flex items-center gap-6">
@@ -87,7 +87,7 @@ export function MemberList({ onAddMember }) {
                                     <p className="text-text font-bold text-lg tracking-tighter leading-none">{member.full_name}</p>
                                     {member.status === 'Active' && <ShieldCheck size={16} className="text-success" />}
                                 </div>
-                                <p className="text-[10px] font-mono font-bold text-accent/60 tracking-tight uppercase">{member.member_code || 'NO-CODE'}</p>
+                                <p className="text-[10px] font-mono font-bold text-primary/60 tracking-tight uppercase">{member.member_code || 'NO-CODE'}</p>
                                 <div className="flex items-center gap-3">
                                     <span className="text-[9px] font-bold text-text/20 uppercase tracking-[0.15em]">{member.category}</span>
                                     <div className="w-1 h-1 bg-text/5 rounded-full" />

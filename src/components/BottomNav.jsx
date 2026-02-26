@@ -33,7 +33,7 @@ export function BottomNav({ user }) {
                         {({ isActive }) => (
                             <>
                                 {isActive && (
-                                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-8 h-1.5 bg-accent rounded-full shadow-[0_4px_10px_rgba(201,166,70,0.4)]" />
+                                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-8 h-1.5 bg-primary rounded-full shadow-[0_4px_10px_rgba(30,136,229,0.4)]" />
                                 )}
                                 <Icon size={24} strokeWidth={isActive ? 3 : 2} />
                                 <span className="text-[8px] font-black tracking-[0.2em] uppercase leading-none">{tab.label}</span>
