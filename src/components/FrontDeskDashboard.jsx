@@ -112,7 +112,7 @@ export function FrontDeskDashboard({ onNavigate }) {
     const quickStats = [
         { label: "Today's Attendance", value: todayCount.toString(), icon: Users, trend: 0 },
         { label: "Total Members", value: memberCount.toString(), icon: UserPlus, trend: 0 },
-        { label: "Net Daily Flow", value: `RWF ${(financeStats.dailyData?.[6]?.profit * 1000 || 0).toLocaleString()}`, icon: Activity, trend: 0 },
+        { label: "Today's Net Balance", value: `RWF ${Math.abs((financeStats.todayRevenue || 0) - (financeStats.todayExpenses || 0)).toLocaleString()}`, icon: Activity, trend: (financeStats.todayRevenue - financeStats.todayExpenses) >= 0 ? 1 : -1 },
     ];
 
     return (
@@ -155,7 +155,7 @@ export function FrontDeskDashboard({ onNavigate }) {
             {/* Main Action Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                 {/* Daily Revenue Velocity Chart */}
-                <Card subtitle="Revenue Velocity" title="Last 7 Days">
+                <Card subtitle="Last 7 Days" title="Revenue">
                     <div className="h-48 flex items-end justify-between gap-3 pt-8 px-4">
                         {(() => {
                             const data = financeStats.dailyData || new Array(7).fill({ day: '-', revenue: 0 });
@@ -307,9 +307,9 @@ export function FrontDeskDashboard({ onNavigate }) {
                             <p className="text-surface/70 text-[10px] font-bold uppercase tracking-widest mt-3">Best upsell opportunity today</p>
                         </div>
                         <div className="rounded-[2rem] bg-white/10 border border-white/10 p-6">
-                            <p className="text-surface/60 text-[9px] font-bold uppercase tracking-[0.2em] mb-2">Net Daily Flow</p>
+                            <p className="text-surface/60 text-[9px] font-bold uppercase tracking-[0.2em] mb-2">Today's Net Balance</p>
                             <p className="text-3xl font-bold tracking-tighter leading-none">
-                                RWF {(financeStats.dailyData?.[6]?.profit * 1000 || 0).toLocaleString()}
+                                RWF {Math.abs((financeStats.todayRevenue || 0) - (financeStats.todayExpenses || 0)).toLocaleString()}
                             </p>
                             <p className="text-surface/70 text-[10px] font-bold uppercase tracking-widest mt-3">Revenue after expenses today</p>
                         </div>

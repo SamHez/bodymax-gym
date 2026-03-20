@@ -23,10 +23,8 @@ export function MemberDetailsModal({ member, onClose, onDelete, onEdit }) {
     }, []);
 
     const handleDelete = () => {
-        if (window.confirm(`Are you sure you want to delete ${member.full_name}? This action cannot be undone.`)) {
-            onDelete(member.id);
-            onClose();
-        }
+        onDelete(member.id);
+        // Parent component (MemberList) handles the confirmation modal
     };
 
     return (

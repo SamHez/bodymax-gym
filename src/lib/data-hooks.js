@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase';
+import { useToast } from '../context/ToastContext';
 
 const MEMBER_FIELDS = `
     id,
@@ -54,12 +55,9 @@ function updateMemberCountCache(count, status) {
 
 function decrementMemberCaches(deletedId) {
     if (Array.isArray(membersListCache)) {
-        const nextMembers = membersListCache.filter((member) => member.id !== deletedId);
-        if (nextMembers.length !== membersListCache.length) {
-            membersListCache = nextMembers;
-            membersListCacheAt = Date.now();
-            updateMemberCountCache(nextMembers.length);
-        }
+        membersListCache = membersListCache.filter((member) => member.id !== deletedId);
+        membersListCacheAt = Date.now();
+        updateMemberCountCache(membersListCache.length);
     } else {
         const totalCountCache = getCachedCount();
         if (totalCountCache) {
@@ -69,6 +67,7 @@ function decrementMemberCaches(deletedId) {
 }
 
 export function useMembers(options = {}) {
+    const { showToast } = useToast();
     const {
         countOnly = false,
         search = '',
@@ -188,18 +187,25 @@ export function useMembers(options = {}) {
     }, [fetchMembers]);
 
     const deleteMember = async (id) => {
-        const { error } = await supabase
-            .from('members')
-            .delete()
-            .eq('id', id);
+        try {
+            console.log(`[useMembers] Attempting to delete member: ${id}`);
+            const { error } = await supabase
+                .from('members')
+                .delete()
+                .eq('id', id);
 
-        if (!error) {
+            if (error) throw error;
+            
+            showToast("Member record permanently deleted", "success");
             setMembers(prev => prev.filter(m => m.id !== id));
             decrementMemberCaches(id);
+            fetchMembers({ force: true }); // Sync with server count/etc
             return true;
+        } catch (err) {
+            console.error("[useMembers] Delete Failed:", err.message || err);
+            showToast(err.message || "Failed to delete member", "error");
+            return false;
         }
-        console.error("Error deleting member:", error);
-        return false;
     };
 
     return {
@@ -296,6 +302,7 @@ let expensesCache = null;
 let expensesCacheAt = 0;
 
 export function useExpenses() {
+    const { showToast } = useToast();
     const [expenses, setExpenses] = useState(() => expensesCache ?? []);
     const [loading, setLoading] = useState(() => !expensesCache || !isFresh(expensesCacheAt, EXPENSES_CACHE_TTL));
 
@@ -337,12 +344,55 @@ export function useExpenses() {
                 expensesCacheAt = Date.now();
                 return next;
             });
+            // Update finance cache to reflect new expense
+            if (financeCache) {
+                financeCache = {
+                    ...financeCache,
+                    expenses: (financeCache.expenses || 0) + Number(expense.amount),
+                    netProfit: (financeCache.netProfit || 0) - Number(expense.amount)
+                };
+            }
             return true;
         }
         return false;
     };
 
-    return { expenses, loading, addExpense, refresh: () => fetchExpenses({ force: true }) };
+    const deleteExpense = async (id) => {
+        try {
+            const { error } = await supabase
+                .from('expenses')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+
+            showToast("Expense record deleted", "success");
+            setExpenses(prev => {
+                const deletedExpense = prev.find(e => e.id === id);
+                const next = prev.filter(e => e.id !== id);
+                expensesCache = next;
+                expensesCacheAt = Date.now();
+                
+                // Update finance cache
+                if (financeCache && deletedExpense) {
+                    financeCache = {
+                        ...financeCache,
+                        expenses: Math.max(0, (financeCache.expenses || 0) - Number(deletedExpense.amount)),
+                        netProfit: (financeCache.netProfit || 0) + Number(deletedExpense.amount)
+                    };
+                }
+                return next;
+            });
+            fetchExpenses({ force: true }); // Force re-fetch of finance stats and ledger
+            return true;
+        } catch (err) {
+            console.error("[useExpenses] Delete Failed:", err.message || err);
+            showToast(err.message || "Failed to delete expense", "error");
+            return false;
+        }
+    };
+
+    return { expenses, loading, addExpense, deleteExpense, refresh: () => fetchExpenses({ force: true }) };
 }
 
 // --- Finance Cache ---

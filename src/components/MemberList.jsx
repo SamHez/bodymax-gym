@@ -5,23 +5,40 @@ import { cn } from '../lib/utils';
 import { AnimatePresence } from 'framer-motion';
 import { MemberDetailsModal } from './MemberDetailsModal';
 import { useMembers } from '../lib/data-hooks';
+import { ConfirmationModal } from './ConfirmationModal';
 
 export function MemberList({ onAddMember, onEditMember }) {
     const [search, setSearch] = useState('');
     const { members, loading, deleteMember } = useMembers();
     const [selectedMember, setSelectedMember] = useState(null);
     const [menuOpenId, setMenuOpenId] = useState(null);
+    const [memberToDelete, setMemberToDelete] = useState(null);
+    const [deleting, setDeleting] = useState(false);
 
     const filteredMembers = members.filter(m =>
         m.full_name?.toLowerCase().includes(search.toLowerCase()) ||
         m.phone?.toLowerCase().includes(search.toLowerCase())
     );
 
-    const handleDelete = async (id, e) => {
-        e.stopPropagation();
-        if (window.confirm("Are you sure you want to permanently delete this member?")) {
-            await deleteMember(id);
-            setMenuOpenId(null);
+    const handleDeleteRequest = (id, e) => {
+        if (e) e.stopPropagation();
+        setMemberToDelete(id);
+        setMenuOpenId(null);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!memberToDelete) return;
+        setDeleting(true);
+        try {
+            const success = await deleteMember(memberToDelete);
+            if (success) {
+                setMemberToDelete(null);
+                if (selectedMember?.id === memberToDelete) setSelectedMember(null);
+            }
+        } catch (err) {
+            console.error("Delete Member UI Error:", err);
+        } finally {
+            setDeleting(false);
         }
     };
 
@@ -130,7 +147,7 @@ export function MemberList({ onAddMember, onEditMember }) {
                                         <Eye size={14} /> View Details
                                     </button>
                                     <button
-                                        onClick={(e) => handleDelete(member.id, e)}
+                                        onClick={(e) => handleDeleteRequest(member.id, e)}
                                         className="w-full text-left px-5 py-3 hover:bg-error/5 text-[10px] font-bold uppercase tracking-widest text-error/60 hover:text-error flex items-center gap-2"
                                     >
                                         <Trash2 size={14} /> Delete Asset
@@ -163,11 +180,20 @@ export function MemberList({ onAddMember, onEditMember }) {
                     <MemberDetailsModal
                         member={selectedMember}
                         onClose={() => setSelectedMember(null)}
-                        onDelete={deleteMember}
+                        onDelete={(id) => setMemberToDelete(id)}
                         onEdit={onEditMember}
                     />
                 )}
             </AnimatePresence>
+            {/* Confirmation Modal */}
+            <ConfirmationModal 
+                isOpen={!!memberToDelete}
+                onClose={() => setMemberToDelete(null)}
+                onConfirm={handleConfirmDelete}
+                title="Delete Member?"
+                message="This will permanently remove this member and all their records from the system. This action cannot be undone."
+                confirmText={deleting ? "Deleting..." : "Delete Permanently"}
+            />
         </div>
     );
 }

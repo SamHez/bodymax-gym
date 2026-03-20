@@ -12,6 +12,7 @@ import ExpenseManagement from './components/ExpenseManagement';
 import { ExpiryMonitoring } from './components/ExpiryMonitoring';
 import { MemberEdit } from './components/MemberEdit';
 import { FrontDeskDashboard } from './components/FrontDeskDashboard';
+import { LoadingScreen } from './components/LoadingScreen';
 import { useTheme } from './lib/useTheme';
 import { cn } from './lib/utils';
 import { supabase } from './lib/supabase';
@@ -123,11 +124,7 @@ function App() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-surface flex items-center justify-center">
-        <div className="text-accent text-[10px] font-black uppercase tracking-[1em] animate-pulse">Initializing System...</div>
-      </div>
-    );
+    return <LoadingScreen message="Initializing System" />;
   }
 
   if (!user && location.pathname !== '/login') {
