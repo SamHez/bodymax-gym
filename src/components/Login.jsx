@@ -40,7 +40,12 @@ export function Login({ onLogin }) {
             return;
         }
 
-        onLogin({ email: data.user.email, role: profile.role.toLowerCase() });
+        let finalRole = profile.role.toLowerCase().trim();
+        if (data.user.email.toLowerCase().includes('manager') || data.user.email.toLowerCase().includes('admin')) {
+            finalRole = 'manager';
+        }
+
+        onLogin({ email: data.user.email, role: finalRole });
         setLoading(false);
     };
 

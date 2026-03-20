@@ -1,4 +1,5 @@
 -- 1. Reset Schema (Careful! This deletes data)
+drop table if exists public.expenses cascade;
 drop table if exists public.payments cascade;
 drop table if exists public.attendance cascade;
 drop table if exists public.members cascade;
@@ -16,7 +17,7 @@ create table public.members (
     phone text,
     email text,
     category text not null check (category in ('Group Membership', 'Normal Membership', 'Daily Pass')),
-    duration text check (duration in ('Weekly', 'Monthly', '3 Months', 'Annual')),
+    duration text check (duration in ('Weekly', 'Monthly', '3 Months', 'Annual', 'Daily')),
     start_date date not null default current_date,
     expiry_date date not null,
     status text not null default 'Active' check (status in ('Active', 'Expiring Soon', 'Expired')),
@@ -42,6 +43,17 @@ create table public.payments (
     transaction_date timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+-- 4. Expenses Table
+create table public.expenses (
+    id uuid default uuid_generate_v4() primary key,
+    amount decimal(12,2) not null,
+    category text not null,
+    description text,
+    payment_method text not null,
+    recorded_by uuid references auth.users(id),
+    expense_date timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
 -- 4. Trainers Table
 create table public.trainers (
     id uuid default uuid_generate_v4() primary key,
@@ -61,12 +73,17 @@ create table public.profiles (
 alter table public.members enable row level security;
 alter table public.attendance enable row level security;
 alter table public.payments enable row level security;
+alter table public.expenses enable row level security;
 alter table public.trainers enable row level security;
 alter table public.profiles enable row level security;
 
 -- Policies (Example: Authenticated users can read)
 create policy "Authenticated users can view members" on public.members for select to authenticated using (true);
+create policy "Authenticated users can register members" on public.members for insert to authenticated with check (true);
+create policy "Authenticated users can update members" on public.members for update to authenticated using (true);
 create policy "Authenticated users can mark attendance" on public.attendance for insert to authenticated with check (true);
-create policy "Managers can view all payments" on public.payments for all to authenticated using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'Manager')
-);
+create policy "Authenticated users can view attendance" on public.attendance for select to authenticated using (true);
+create policy "Authenticated users can record payments" on public.payments for insert to authenticated with check (true);
+create policy "Authenticated users can view payments" on public.payments for select to authenticated using (true);
+create policy "Authenticated users can manage expenses" on public.expenses for all to authenticated using (true);
+create policy "Managers can view profiles" on public.profiles for select to authenticated using (true);

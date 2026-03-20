@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Users, UserCheck, CreditCard, Activity } from 'lucide-react';
+import { LayoutDashboard, Users, UserCheck, CreditCard } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 import { NavLink } from 'react-router-dom';
@@ -10,7 +10,6 @@ export function BottomNav({ user }) {
         { id: 'members', icon: Users, label: 'Members', path: '/members', role: 'both' },
         { id: 'attendance', icon: UserCheck, label: 'Check-in', path: '/attendance', role: 'both' },
         { id: 'finance', icon: CreditCard, label: 'Finance', path: '/finance', role: 'both' },
-        // { id: 'trainers', icon: Activity, label: 'Elite', path: '/trainers', role: 'manager' },
     ];
 
     const filteredTabs = tabs.filter(tab =>

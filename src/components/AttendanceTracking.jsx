@@ -1,20 +1,22 @@
 import React, { useState } from 'react';
 import { Card } from './Card';
-import { UserCheck, Search, CheckCircle2, QrCode, ShieldAlert, Ticket } from 'lucide-react';
+import { CheckCircle2, Search, ShieldAlert, Ticket, X, Check, UserCheck, Loader2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { supabase } from '../lib/supabase';
+import { useToast } from '../context/ToastContext';
 
 import { useMembers, useAttendance } from '../lib/data-hooks';
 
 export function AttendanceTracking() {
+    const { showToast } = useToast();
     const [search, setSearch] = useState('');
-    const { members, loading } = useMembers();
+    const { members, loading, refresh: refreshMembers } = useMembers();
 
     const filteredMembers = members.filter(m =>
         m.full_name?.toLowerCase().includes(search.toLowerCase()) ||
         m.phone?.toLowerCase().includes(search.toLowerCase())
     );
-    const { todayCount, checkIn, removeCheckIn, checkedInIds } = useAttendance();
+    const { todayCount, checkIn, removeCheckIn, checkedInIds, refresh: refreshAttendance } = useAttendance();
 
     const handleCheckIn = async (id) => {
         await checkIn(id);
@@ -24,32 +26,65 @@ export function AttendanceTracking() {
         await removeCheckIn(id);
     };
 
-    const handleDailyPass = async () => {
-        const name = prompt("Enter Guest Name (Optional):") || "Daily Pass Guest";
+    const [showDailyPassModal, setShowDailyPassModal] = useState(false);
+    const [guestName, setGuestName] = useState('');
+    const [guestPaymentMethod, setGuestPaymentMethod] = useState('Cash');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleDailyPass = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        const name = guestName.trim() || "Daily Pass Guest";
+
         try {
-            // 1. Create a temporary member record
+            // 1. Create a guest member record
+            const year = new Date().getFullYear();
+            const random = Math.floor(1000 + Math.random() * 9000);
+            const memberCode = `GUEST-${year}-${random}`;
+
             const { data: member, error: memberError } = await supabase
                 .from('members')
                 .insert([{
+                    member_code: memberCode,
                     full_name: name,
                     category: 'Daily Pass',
                     duration: 'Daily',
                     start_date: new Date().toISOString().split('T')[0],
-                    expiry_date: new Date().toISOString().split('T')[0], // Expires today
-                    status: 'Active'
+                    expiry_date: new Date().toISOString().split('T')[0],
+                    status: 'Active',
+                    branch_code: 'HQ' // Default for guests
                 }])
                 .select()
                 .single();
 
             if (memberError) throw memberError;
 
-            // 2. Check them in
+            // 2. Log the 3000 RWF payment
+            const { error: paymentError } = await supabase
+                .from('payments')
+                .insert([{
+                    member_id: member.id,
+                    amount: 3000,
+                    payment_method: guestPaymentMethod
+                }]);
+
+            if (paymentError) throw paymentError;
+
+            // 3. Check them in
             await checkIn(member.id);
-            alert(`Daily Pass issued for ${name}`);
-            window.location.reload(); // Simple reload to refresh the list
+
+            // 4. Refresh local state
+            await refreshMembers();
+            await refreshAttendance();
+
+            setShowDailyPassModal(false);
+            setGuestName('');
+            showToast(`Access Authorized for ${name}. Payment Verified.`, 'success');
         } catch (error) {
             console.error("Daily Pass Error:", error);
-            alert("Failed to issue Daily Pass.");
+            showToast("Security Protocol Failure: Failed to issue Daily Pass.", 'error');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -72,14 +107,11 @@ export function AttendanceTracking() {
                     </div>
                     <div className="w-[1px] h-12 md:h-20 bg-text/5" />
                     <button
-                        onClick={handleDailyPass}
-                        className="p-4 md:p-6 bg-surface hover:bg-accent/10 hover:text-accent rounded-2xl md:rounded-[2rem] border border-text/5 transition-all active:scale-90 shadow-sm group/dp"
-                        title="Log Daily Pass"
+                        onClick={() => setShowDailyPassModal(true)}
+                        className="flex items-center gap-4 p-4 md:px-8 md:py-6 bg-accent text-surface rounded-2xl md:rounded-[2rem] transition-all active:scale-90 shadow-xl shadow-accent/20 group/dp"
                     >
-                        <Ticket size={24} className="md:w-8 md:h-8 group-hover/dp:scale-110 transition-transform" />
-                    </button>
-                    <button className="p-4 md:p-6 bg-surface hover:bg-accent/10 hover:text-accent rounded-2xl md:rounded-[2rem] border border-text/5 transition-all active:scale-90 shadow-sm group/qr">
-                        <QrCode size={24} className="md:w-8 md:h-8 group-hover/qr:scale-110 transition-transform" />
+                        <Ticket size={24} className="md:w-8 md:h-8 group-hover/dp:rotate-6 transition-transform" />
+                        <span className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.2em]">Daily Pass</span>
                     </button>
                 </div>
             </div>
@@ -107,8 +139,11 @@ export function AttendanceTracking() {
                 </div>
 
                 {loading ? (
-                    <div className="py-20 text-center text-text/10 font-bold uppercase tracking-[1em] animate-pulse">
-                        Scanning Bio-Matrix...
+                    <div className="py-20 flex flex-col items-center justify-center gap-4 text-center text-text/20">
+                        <Loader2 size={28} className="animate-spin text-accent" />
+                        <div className="font-bold uppercase tracking-[0.5em]">
+                            Scanning Bio-Matrix...
+                        </div>
                     </div>
                 ) : filteredMembers.length === 0 ? (
                     <div className="py-20 text-center text-text/10 font-bold uppercase tracking-[0.5em]">
@@ -143,7 +178,6 @@ export function AttendanceTracking() {
                                             member.status === 'Expired' ? "text-error" : "text-primary"
                                     )}>{member.status} {member.category} TIER</span>
                                     <div className="hidden md:block w-1.5 h-1.5 bg-text/5 rounded-full" />
-                                    {/*<span className="hidden md:block text-text/20 text-[10px] font-bold uppercase tracking-widest tabular-nums">AUTH #{member.id}X924</span>*/}
                                 </div>
                             </div>
                         </div>
@@ -170,6 +204,76 @@ export function AttendanceTracking() {
                     </Card>
                 ))}
             </div>
+
+            {/* Daily Pass Modal */}
+            {showDailyPassModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+                    <div className="absolute inset-0 bg-surface/80 backdrop-blur-xl animate-in fade-in duration-300" onClick={() => setShowDailyPassModal(false)} />
+                    <Card className="relative w-full max-w-xl p-10 space-y-10 shadow-3xl animate-in zoom-in-95 duration-200 border-none bg-card" title="GUEST AUTHORIZATION" subtitle="Daily Pass Entry">
+                        <form onSubmit={handleDailyPass} className="space-y-8">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-bold text-text/30 uppercase tracking-[0.3em] ml-2">Guest Identity (Optional)</label>
+                                <input
+                                    type="text"
+                                    className="w-full bg-text/[0.03] border border-text/5 rounded-3xl py-6 px-8 text-xl font-bold tracking-tighter focus:outline-none focus:border-accent/40 focus:bg-white transition-all shadow-inner"
+                                    placeholder="ENTER NAME..."
+                                    value={guestName}
+                                    onChange={(e) => setGuestName(e.target.value)}
+                                />
+                            </div>
+
+                            <div className="bg-accent/5 border border-accent/20 p-8 rounded-[2.5rem] flex items-center justify-between">
+                                <div>
+                                    <p className="text-accent text-[10px] font-bold uppercase tracking-[0.2em] mb-1">Pass Value</p>
+                                    <h4 className="text-3xl font-black text-text tracking-tighter">3,000 <span className="text-xs text-text/20 uppercase tracking-[0.2em]">RWF</span></h4>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-text/20 text-[10px] font-bold uppercase tracking-[0.2em] mb-1">Duration</p>
+                                    <p className="text-text font-bold uppercase tracking-widest text-xs">Single Entry</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <label className="text-[10px] font-bold text-text/30 uppercase tracking-[0.4em] ml-2 block">Settlement Logic</label>
+                                <div className="grid grid-cols-2 gap-4">
+                                    {['Cash', 'Mobile Money'].map(m => (
+                                        <button
+                                            key={m}
+                                            type="button"
+                                            onClick={() => setGuestPaymentMethod(m)}
+                                            className={cn(
+                                                "p-6 rounded-3xl flex items-center justify-center gap-3 border-4 transition-all",
+                                                guestPaymentMethod === m ? "border-accent bg-accent/5" : "border-text/5 bg-surface opacity-40"
+                                            )}
+                                        >
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.2em]">{m}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="flex gap-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowDailyPassModal(false)}
+                                    className="flex-1 py-6 bg-text/5 text-text rounded-3xl font-bold uppercase tracking-widest text-[10px] hover:bg-text/10 transition-all"
+                                >
+                                    Abort
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isSubmitting}
+                                    className="flex-[2] py-6 bg-accent text-surface rounded-3xl font-bold uppercase tracking-widest text-[10px] hover:scale-105 active:scale-95 transition-all shadow-xl shadow-accent/20 flex items-center justify-center gap-3 disabled:opacity-50"
+                                >
+                                    {isSubmitting ? "PROCESSING..." : (
+                                        <>CONFIRM ENTRY <Check size={18} strokeWidth={4} /></>
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+                    </Card>
+                </div>
+            )}
         </div>
     );
 }

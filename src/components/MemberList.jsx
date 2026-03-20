@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Card } from './Card';
-import { Search, Filter, MoreHorizontal, User, ShieldCheck, Plus, Trash2, Eye } from 'lucide-react';
+import { Search, Filter, MoreHorizontal, User, ShieldCheck, Plus, Trash2, Eye, Loader2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { AnimatePresence } from 'framer-motion';
 import { MemberDetailsModal } from './MemberDetailsModal';
 import { useMembers } from '../lib/data-hooks';
 
-export function MemberList({ onAddMember }) {
+export function MemberList({ onAddMember, onEditMember }) {
     const [search, setSearch] = useState('');
     const { members, loading, deleteMember } = useMembers();
     const [selectedMember, setSelectedMember] = useState(null);
@@ -31,8 +31,8 @@ export function MemberList({ onAddMember }) {
             <div className="flex justify-between items-center bg-card p-6 md:p-10 rounded-[2.5rem] md:rounded-[3rem] border border-text/5 shadow-premium relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[80px]" />
                 <div>
-                    <h2 className="text-primary text-[9px] md:text-[10px] font-bold uppercase tracking-[0.4em] mb-1 leading-none ">Asset Database</h2>
-                    <p className="text-text text-2xl md:text-4xl font-bold tracking-tighter leading-none uppercase">DIRECTORY</p>
+                    <h2 className="text-primary text-[9px] md:text-[10px] font-bold uppercase tracking-[0.4em] mb-1 leading-none hidden ">Asset Database</h2>
+                    <p className="text-text text-2xl md:text-4xl font-bold tracking-tighter leading-none uppercase">MEMBERS</p>
                 </div>
 
                 <button
@@ -61,8 +61,11 @@ export function MemberList({ onAddMember }) {
             {/* Grid-based Member Matrix */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {loading ? (
-                    <div className="col-span-2 py-20 text-center text-text/10 font-bold uppercase tracking-[1em] animate-pulse">
-                        Synchronizing Database...
+                    <div className="col-span-2 py-20 flex flex-col items-center justify-center gap-4 text-center text-text/20">
+                        <Loader2 size={28} className="animate-spin text-primary" />
+                        <div className="font-bold uppercase tracking-[0.5em]">
+                            Synchronizing Database...
+                        </div>
                     </div>
                 ) : filteredMembers.length === 0 ? (
                     <div className="col-span-2 py-20 text-center text-text/10 font-bold uppercase tracking-[0.5em]">
@@ -161,10 +164,10 @@ export function MemberList({ onAddMember }) {
                         member={selectedMember}
                         onClose={() => setSelectedMember(null)}
                         onDelete={deleteMember}
+                        onEdit={onEditMember}
                     />
                 )}
             </AnimatePresence>
         </div>
     );
 }
-

@@ -2,8 +2,10 @@ import React, { useState, useRef } from 'react';
 import { Card } from './Card';
 import { UserPlus, Check, Shield, Camera, Phone, User as UserIcon, MapPin, CreditCard, Calendar, ChevronLeft } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { useToast } from '../context/ToastContext';
 
 export function MembershipRegistration({ onComplete, onCancel }) {
+    const { showToast } = useToast();
     const [formData, setFormData] = useState({
         fullName: '',
         phone: '',
@@ -60,10 +62,14 @@ export function MembershipRegistration({ onComplete, onCancel }) {
 
     const handleSubmit = () => {
         if (!formData.fullName || !formData.phone || !formData.branchCode) {
-            alert("Please fill in all required fields.");
+            showToast("Please fill in all required fields.", "error");
             return;
         }
-        onComplete?.(formData);
+
+        const priceString = calculatePrice().replace(/,/g, '');
+        const price = parseInt(priceString);
+
+        onComplete?.(formData, price);
     };
 
     return (

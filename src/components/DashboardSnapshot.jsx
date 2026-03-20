@@ -7,13 +7,13 @@ import { useAttendance, useMembers, useFinance } from '../lib/data-hooks';
 
 export function DashboardSnapshot() {
     const { todayCount } = useAttendance();
-    const { members } = useMembers();
+    const { count: memberCount } = useMembers({ countOnly: true });
     const { stats: financeStats } = useFinance();
 
     const stats = [
         { label: "Active Traffic", value: todayCount.toString(), trend: 0, icon: Users },
         { label: "Daily Revenue", value: `${(financeStats.revenue / 1000).toFixed(1)}k`, trend: 0, icon: TrendingUp, colorClass: "text-accent" },
-        { label: "Total Members", value: members.length.toString(), trend: 0, icon: UserPlus },
+        { label: "Total Members", value: memberCount.toString(), trend: 0, icon: UserPlus },
         { label: "Renewals", value: "2", trend: 0, icon: RefreshCw },
     ];
 

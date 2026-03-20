@@ -3,7 +3,7 @@ import { X, User, Phone, Mail, Calendar, CreditCard, ShieldCheck, AlertCircle, C
 import { cn } from '../lib/utils'; // Assuming utils exists
 import { motion } from 'framer-motion';
 
-export function MemberDetailsModal({ member, onClose, onDelete }) {
+export function MemberDetailsModal({ member, onClose, onDelete, onEdit }) {
     if (!member) return null;
 
     useEffect(() => {
@@ -143,7 +143,13 @@ export function MemberDetailsModal({ member, onClose, onDelete }) {
                             >
                                 <AlertCircle size={14} /> Delete Asset
                             </button>
-                            <button className="flex-1 py-4 bg-primary text-white hover:bg-primary-light rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-colors shadow-premium">
+                            <button
+                                onClick={() => {
+                                    onEdit(member);
+                                    onClose();
+                                }}
+                                className="flex-1 py-4 bg-primary text-white hover:bg-primary-light rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-colors shadow-premium"
+                            >
                                 Edit Details
                             </button>
                         </div>

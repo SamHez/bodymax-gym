@@ -5,29 +5,33 @@ import { cn } from '../lib/utils';
 
 import { useAttendance, useMembers, useFinance } from '../lib/data-hooks';
 import { supabase } from '../lib/supabase';
+import { useToast } from '../context/ToastContext';
 
 export function FrontDeskDashboard({ onNavigate }) {
-    const { todayCount, checkIn, removeCheckIn, checkedInIds, loading: attendanceLoading } = useAttendance();
-    const { members, loading: membersLoading } = useMembers();
-    const { stats: financeStats, loading: financeLoading } = useFinance();
-
-    const isSyncing = attendanceLoading || membersLoading || financeLoading;
+    const { showToast } = useToast();
     const [search, setSearch] = useState('');
+    const { todayCount, checkIn, removeCheckIn, checkedInIds, loading: attendanceLoading, refresh: refreshAttendance } = useAttendance();
+    const { count: memberCount, loading: memberCountLoading } = useMembers({ countOnly: true });
+    const { count: expiredCount } = useMembers({ countOnly: true, status: 'Expired' });
+    const { count: expiringSoonCount } = useMembers({ countOnly: true, status: 'Expiring Soon' });
+    const {
+        members: searchResults,
+        loading: searchLoading,
+    } = useMembers({
+        search,
+        limit: 5,
+        enabled: search.trim() !== '',
+    });
+    const { stats: financeStats, loading: financeLoading, refresh: refreshFinance } = useFinance();
 
-    const expiredCount = members.filter(m => m.status === 'Expired').length;
-    const expiringSoonCount = members.filter(m => m.status === 'Expiring Soon').length;
-
-    const filteredMembers = search.trim() === ''
-        ? []
-        : members.filter(m =>
-            m.full_name?.toLowerCase().includes(search.toLowerCase()) ||
-            m.phone?.toLowerCase().includes(search.toLowerCase())
-        ).slice(0, 5);
+    const isSyncing = attendanceLoading || memberCountLoading || financeLoading;
 
     const handleCheckIn = async (memberId) => {
         const success = await checkIn(memberId);
         if (success) {
             setSearch('');
+            await refreshAttendance();
+            await refreshFinance();
         }
     };
 
@@ -35,6 +39,8 @@ export function FrontDeskDashboard({ onNavigate }) {
         const success = await removeCheckIn(memberId);
         if (success) {
             setSearch('');
+            await refreshAttendance();
+            await refreshFinance();
         }
     };
 
@@ -46,7 +52,7 @@ export function FrontDeskDashboard({ onNavigate }) {
             // Get a valid member ID
             const { data: member } = await supabase.from('members').select('id').limit(1).single();
             if (!member) {
-                alert("No members found. Create a member first.");
+                showToast("No members found. Create a member first.", "error");
                 return;
             }
 
@@ -63,7 +69,7 @@ export function FrontDeskDashboard({ onNavigate }) {
 
                 if (deleteError) {
                     console.error("Error clearing payments:", deleteError);
-                    alert("Warning: Could not clear previous data. Check console/permissions.");
+                    showToast("Warning: Could not clear previous data. Check console/permissions.", "error");
                 }
             }
 
@@ -95,65 +101,46 @@ export function FrontDeskDashboard({ onNavigate }) {
             const { error } = await supabase.from('payments').insert(payments);
             if (error) throw error;
 
-            alert("Demo data generated! Reloading...");
-            window.location.reload();
+            showToast("Demo data generated! Reloading...", "success");
+            setTimeout(() => window.location.reload(), 1500);
         } catch (error) {
             console.error("Demo Data Error:", error);
-            alert("Failed to generate data.");
+            showToast("Failed to generate data.", "error");
         }
     };
 
     const quickStats = [
         { label: "Today's Attendance", value: todayCount.toString(), icon: Users, trend: 0 },
-        { label: "Total Members", value: members.length.toString(), icon: UserPlus, trend: 0 },
+        { label: "Total Members", value: memberCount.toString(), icon: UserPlus, trend: 0 },
         { label: "Net Daily Flow", value: `RWF ${(financeStats.dailyData?.[6]?.profit * 1000 || 0).toLocaleString()}`, icon: Activity, trend: 0 },
     ];
 
-    const recentActivity = members.slice(0, 4).map((m, i) => ({
-        id: m.id,
-        name: m.full_name,
-        action: i % 2 === 0 ? "Check-in" : "Renewal",
-        time: "Recently",
-        type: i % 2 === 0 ? "attendance" : "payment"
-    }));
-
     return (
-        <div className="space-y-10">
-            {/* Action Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+        <div className="space-y-7">
+            {/* Action Header — compact */}
+            <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-accent text-[10px] font-bold uppercase tracking-[0.4em] mb-1 leading-none">Front Desk Operations</h2>
-                    <p className="text-text text-2xl md:text-3xl font-bold tracking-tighter leading-none uppercase">BODYMAX GYM</p>
+                    <p className="text-accent text-[10px] font-bold uppercase tracking-[0.3em] leading-none">Front Desk</p>
+                    <h2 className="text-text text-[25px] font-bold tracking-tighter leading-tight uppercase">Dashboard</h2>
                 </div>
-
-                <div className="flex gap-4">
-                    <button
-                        onClick={generateDemoData}
-                        className="hidden flex items-center gap-2 bg-text/5 text-text px-4 py-4 rounded-3xl font-bold uppercase tracking-widest text-[10px] hover:bg-text/10 transition-all"
-                        title="Populate Chart"
-                    >
-                        <Activity size={16} /> Demo Data
-                    </button>
+                <div className="flex items-center gap-2">
                     <button
                         onClick={() => onNavigate('attendance')}
-                        className="flex items-center gap-3 bg-text/5 text-text px-6 py-4 rounded-3xl font-bold uppercase tracking-widest text-xs hover:bg-text/10 transition-all border border-text/5"
+                        className="flex items-center gap-2 bg-text/5 text-text px-4 py-2 rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:bg-text/10 transition-all border border-text/5"
                     >
-                        <Calendar size={18} strokeWidth={2.5} />
-                        Quick Check-in
+                        <Calendar size={14} strokeWidth={2.5} /> Check-in
                     </button>
                     <button
                         onClick={() => onNavigate('expenses')}
-                        className="flex items-center gap-3 bg-text/5 text-text px-6 py-4 rounded-3xl font-bold uppercase tracking-widest text-xs hover:bg-text/10 transition-all border border-text/5"
+                        className="flex items-center gap-2 bg-text/5 text-text px-4 py-2 rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:bg-text/10 transition-all border border-text/5"
                     >
-                        <Receipt size={18} strokeWidth={2.5} />
-                        Log Expense
+                        <Receipt size={14} strokeWidth={2.5} /> Log Expense
                     </button>
                     <button
                         onClick={() => onNavigate('members', 'register')}
-                        className="flex items-center gap-3 bg-primary text-surface px-6 py-4 rounded-3xl font-bold uppercase tracking-widest text-xs hover:scale-105 active:scale-95 transition-all shadow-xl shadow-primary/20"
+                        className="flex items-center gap-2 bg-primary text-surface px-4 py-2 rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20"
                     >
-                        <Plus size={18} strokeWidth={3} />
-                        New Member
+                        <Plus size={14} strokeWidth={3} /> New Member
                     </button>
                 </div>
             </div>
@@ -212,12 +199,16 @@ export function FrontDeskDashboard({ onNavigate }) {
                         {/* Search Results List */}
                         {search.trim() !== '' && (
                             <div className="bg-surface rounded-3xl border border-text/5 divide-y divide-text/5 overflow-hidden shadow-premium animate-in slide-in-from-top-4 duration-300">
-                                {filteredMembers.length === 0 ? (
+                                {searchLoading ? (
+                                    <div className="p-6 text-center text-text/20 text-[10px] font-bold uppercase tracking-widest">
+                                        Searching registry...
+                                    </div>
+                                ) : searchResults.length === 0 ? (
                                     <div className="p-6 text-center text-text/20 text-[10px] font-bold uppercase tracking-widest">
                                         No assets identified
                                     </div>
                                 ) : (
-                                    filteredMembers.map(member => (
+                                    searchResults.map(member => (
                                         <div
                                             key={member.id}
                                             className="p-4 hover:bg-text/[0.02] group flex items-center justify-between"
@@ -285,19 +276,43 @@ export function FrontDeskDashboard({ onNavigate }) {
                 </Card>
             </div>
 
-            {/* Action Prompts */}
+            {/* Front Desk Priorities */}
             <div className="bg-accent rounded-[3rem] p-12 text-surface overflow-hidden relative shadow-gold">
                 <div className="absolute -top-20 -right-20 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
                 <div className="absolute bottom-0 left-1/4 w-40 h-40 bg-black/5 rounded-full blur-2xl" />
 
-                <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
-                    <div className="text-center md:text-left">
-                        <h3 className="text-4xl font-bold  tracking-tighter uppercase mb-2">Shift Performance</h3>
-                        <p className="text-surface/70 font-bold uppercase tracking-widest text-[10px]">Your activity today has been exceptional. Keep the momentum!</p>
+                <div className="relative z-10 space-y-8">
+                    <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+                        <div className="text-center md:text-left">
+                            <h3 className="text-4xl font-bold tracking-tighter uppercase mb-2">Front Desk Priorities</h3>
+                            <p className="text-surface/70 font-bold uppercase tracking-widest text-[10px]">
+                                Focus on renewals, expiring memberships, and daily cash flow.
+                            </p>
+                        </div>
+                        <div className="text-center md:text-right">
+                            <p className="text-5xl font-bold tracking-tighter leading-none mb-2">{todayCount}</p>
+                            <p className="text-surface/50 text-[9px] font-bold uppercase tracking-widest">Members Checked In Today</p>
+                        </div>
                     </div>
-                    <div className="text-center md:text-right">
-                        <p className="text-6xl font-bold  tracking-tighter leading-none mb-2">98%</p>
-                        <p className="text-surface/50 text-[9px] font-bold uppercase tracking-widest">Efficiency Rating</p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="rounded-[2rem] bg-white/10 border border-white/10 p-6">
+                            <p className="text-surface/60 text-[9px] font-bold uppercase tracking-[0.2em] mb-2">Expired Memberships</p>
+                            <p className="text-3xl font-bold tracking-tighter leading-none">{expiredCount}</p>
+                            <p className="text-surface/70 text-[10px] font-bold uppercase tracking-widest mt-3">Need renewal before entry</p>
+                        </div>
+                        <div className="rounded-[2rem] bg-white/10 border border-white/10 p-6">
+                            <p className="text-surface/60 text-[9px] font-bold uppercase tracking-[0.2em] mb-2">Expiring Soon</p>
+                            <p className="text-3xl font-bold tracking-tighter leading-none">{expiringSoonCount}</p>
+                            <p className="text-surface/70 text-[10px] font-bold uppercase tracking-widest mt-3">Best upsell opportunity today</p>
+                        </div>
+                        <div className="rounded-[2rem] bg-white/10 border border-white/10 p-6">
+                            <p className="text-surface/60 text-[9px] font-bold uppercase tracking-[0.2em] mb-2">Net Daily Flow</p>
+                            <p className="text-3xl font-bold tracking-tighter leading-none">
+                                RWF {(financeStats.dailyData?.[6]?.profit * 1000 || 0).toLocaleString()}
+                            </p>
+                            <p className="text-surface/70 text-[10px] font-bold uppercase tracking-widest mt-3">Revenue after expenses today</p>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -83,8 +83,8 @@ export default function ExpenseManagement({ user }) {
                 <Card className="liquid-glass border-none shadow-xl shadow-primary/10">
                     <p className="text-primary/60 text-[9px] font-bold uppercase tracking-[0.2em] mb-4">Daily Spend (Today)</p>
                     <div className="flex items-end gap-2">
-                        <h3 className="text-4xl font-bold tracking-tighter text-white">{totalTodayExpenses.toLocaleString()}</h3>
-                        <span className="text-[10px] text-white/20 mb-1">RWF</span>
+                        <h3 className="text-4xl font-bold tracking-tighter text-text">{totalTodayExpenses.toLocaleString()}</h3>
+                        <span className="text-[10px] text-text/20 mb-1">RWF</span>
                     </div>
                 </Card>
 
