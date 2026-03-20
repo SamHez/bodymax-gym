@@ -217,6 +217,41 @@ export function useMembers(options = {}) {
     };
 }
 
+export function useMemberDistribution() {
+    const [distribution, setDistribution] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchDistribution = useCallback(async () => {
+        setLoading(true);
+        const { data, error } = await supabase
+            .from('members')
+            .select('category');
+
+        if (data) {
+            const counts = data.reduce((acc, curr) => {
+                acc[curr.category] = (acc[curr.category] || 0) + 1;
+                return acc;
+            }, {});
+
+            const total = data.length;
+            const distro = Object.entries(counts).map(([name, count]) => ({
+                name,
+                count,
+                percent: total > 0 ? (count / total) * 100 : 0
+            })).sort((a, b) => b.count - a.count);
+
+            setDistribution(distro);
+        }
+        setLoading(false);
+    }, []);
+
+    useEffect(() => {
+        fetchDistribution();
+    }, [fetchDistribution]);
+
+    return { distribution, loading, refresh: fetchDistribution };
+}
+
 // --- Attendance Cache ---
 const ATTENDANCE_CACHE_TTL = 60 * 1000;
 let attendanceCache = null;
@@ -225,7 +260,9 @@ let attendanceCacheAt = 0;
 export function useAttendance() {
     const [todayCount, setTodayCount] = useState(() => attendanceCache?.todayCount ?? 0);
     const [checkedInIds, setCheckedInIds] = useState(() => attendanceCache?.checkedInIds ?? []);
+    const [historicalData, setHistoricalData] = useState([]);
     const [loading, setLoading] = useState(() => !attendanceCache || !isFresh(attendanceCacheAt, ATTENDANCE_CACHE_TTL));
+    const [loadingHistory, setLoadingHistory] = useState(false);
 
     const fetchAttendance = useCallback(async ({ force = false } = {}) => {
         if (!force && attendanceCache && isFresh(attendanceCacheAt, ATTENDANCE_CACHE_TTL)) {
@@ -249,6 +286,55 @@ export function useAttendance() {
             attendanceCacheAt = Date.now();
         }
         setLoading(false);
+    }, []);
+
+    const fetchHistory = useCallback(async (range = '7d') => {
+        setLoadingHistory(true);
+        const days = range === '7d' ? 7 : 30;
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - (days - 1));
+        startDate.setHours(0, 0, 0, 0);
+
+        const { data, error } = await supabase
+            .from('attendance')
+            .select('attendance_date, check_in_time')
+            .gte('attendance_date', startDate.toISOString().split('T')[0])
+            .order('attendance_date', { ascending: true });
+
+        if (data) {
+            // Aggregate daily counts
+            const dailyMap = {};
+            for (let i = 0; i < days; i++) {
+                const date = new Date(startDate);
+                date.setDate(date.getDate() + i);
+                const dateStr = date.toISOString().split('T')[0];
+                const label = date.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' });
+                dailyMap[dateStr] = { label, count: 0, date: dateStr };
+            }
+
+            data.forEach(entry => {
+                if (dailyMap[entry.attendance_date]) {
+                    dailyMap[entry.attendance_date].count++;
+                }
+            });
+
+            // Peak hours analysis (simplified)
+            const hourMap = {};
+            data.forEach(entry => {
+                const hour = new Date(entry.check_in_time).getHours();
+                hourMap[hour] = (hourMap[hour] || 0) + 1;
+            });
+
+            const sortedHours = Object.entries(hourMap).sort((a, b) => b[1] - a[1]);
+            const peakHour = sortedHours[0] ? `${sortedHours[0][0]}:00` : 'N/A';
+
+            setHistoricalData({
+                daily: Object.values(dailyMap),
+                peakHour,
+                total: data.length
+            });
+        }
+        setLoadingHistory(false);
     }, []);
 
     useEffect(() => {
@@ -293,7 +379,17 @@ export function useAttendance() {
         return false;
     };
 
-    return { todayCount, checkedInIds, checkIn, removeCheckIn, loading, refresh: () => fetchAttendance({ force: true }) };
+    return { 
+        todayCount, 
+        checkedInIds, 
+        historicalData,
+        loading, 
+        loadingHistory,
+        checkIn, 
+        removeCheckIn, 
+        fetchHistory,
+        refresh: () => fetchAttendance({ force: true }) 
+    };
 }
 
 // --- Expenses Cache ---
@@ -432,6 +528,8 @@ export function useFinance() {
                 amount,
                 payment_method,
                 transaction_date,
+                category,
+                description,
                 members (
                     full_name,
                     member_code
@@ -446,11 +544,11 @@ export function useFinance() {
             const now = new Date();
             const todayStr = now.toISOString().split('T')[0];
 
-            const months = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
-            const monthlyData = new Array(10).fill(0).map((_, i) => {
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const monthlyData = new Array(12).fill(0).map((_, i) => {
                 const date = new Date();
                 date.setDate(1);
-                date.setMonth(date.getMonth() - (9 - i));
+                date.setMonth(date.getMonth() - (11 - i));
                 const monthIndex = date.getMonth();
                 const year = date.getFullYear();
 
@@ -470,16 +568,16 @@ export function useFinance() {
 
                 return {
                     month: months[monthIndex],
-                    revenue: monthRev / 1000,
-                    expenses: monthExp / 1000,
-                    profit: (monthRev - monthExp) / 1000
+                    revenue: monthRev,
+                    expenses: monthExp,
+                    profit: monthRev - monthExp
                 };
             });
 
             const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-            const dailyData = new Array(7).fill(0).map((_, i) => {
+            const dailyData = new Array(30).fill(0).map((_, i) => {
                 const date = new Date(now);
-                date.setDate(date.getDate() - (6 - i));
+                date.setDate(date.getDate() - (29 - i));
                 const dayIndex = date.getDay();
                 const dayStr = date.toISOString().split('T')[0];
 
@@ -493,9 +591,10 @@ export function useFinance() {
 
                 return {
                     day: days[dayIndex],
-                    revenue: dayRev / 1000,
-                    expenses: dayExp / 1000,
-                    profit: (dayRev - dayExp) / 1000
+                    date: dayStr,
+                    revenue: dayRev,
+                    expenses: dayExp,
+                    profit: dayRev - dayExp
                 };
             });
 
@@ -520,17 +619,32 @@ export function useFinance() {
                 }))
                 .sort((a, b) => b.amount - a.amount);
 
-            const recentTransactions = [...payData]
-                .sort((a, b) => new Date(b.transaction_date) - new Date(a.transaction_date))
-                .slice(0, 6)
-                .map((payment) => ({
+            const recentTransactions = [
+                ...payData.map((payment) => ({
                     id: payment.id,
-                    memberName: payment.members?.full_name || 'Walk-in Member',
-                    memberCode: payment.members?.member_code || 'N/A',
+                    type: 'income',
+                    title: payment.category === 'Membership' 
+                        ? (payment.members?.full_name || 'Walk-in Member')
+                        : (payment.description || payment.category),
+                    subtitle: payment.category === 'Membership' 
+                        ? (payment.members?.member_code || 'N/A')
+                        : payment.category,
                     amount: Number(payment.amount),
-                    paymentMethod: payment.payment_method,
-                    transactionDate: payment.transaction_date,
-                }));
+                    method: payment.payment_method,
+                    date: payment.transaction_date,
+                })),
+                ...expData.map((expense) => ({
+                    id: expense.id,
+                    type: 'expense',
+                    title: expense.description || expense.category,
+                    subtitle: expense.category,
+                    amount: Number(expense.amount),
+                    method: expense.payment_method,
+                    date: expense.expense_date,
+                }))
+            ]
+            .sort((a, b) => new Date(b.date) - new Date(a.date))
+            .slice(0, 15);
 
             const nextStats = {
                 revenue: totalRev,
@@ -558,5 +672,21 @@ export function useFinance() {
         fetchFinance();
     }, [fetchFinance]);
 
-    return { stats, loading, refresh: () => fetchFinance({ force: true }) };
+    const recordIncome = async (income) => {
+        const { data, error } = await supabase
+            .from('payments')
+            .insert([{
+                ...income,
+                transaction_date: new Date().toISOString()
+            }])
+            .select();
+
+        if (!error) {
+            fetchFinance({ force: true });
+            return true;
+        }
+        return false;
+    };
+
+    return { stats, loading, recordIncome, refresh: () => fetchFinance({ force: true }) };
 }

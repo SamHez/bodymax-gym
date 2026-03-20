@@ -8,12 +8,12 @@ import { useAttendance, useMembers, useFinance } from '../lib/data-hooks';
 export function DashboardSnapshot() {
     const { todayCount } = useAttendance();
     const { count: memberCount } = useMembers({ countOnly: true });
-    const { stats: financeStats } = useFinance();
+    const fStats = financeStats || { revenue: 0, mobileRevenue: 0, cashRevenue: 0, monthlyData: [] };
 
     const stats = [
-        { label: "Active Traffic", value: todayCount.toString(), trend: 0, icon: Users },
-        { label: "Daily Revenue", value: `${(financeStats.revenue / 1000).toFixed(1)}k`, trend: 0, icon: TrendingUp, colorClass: "text-accent" },
-        { label: "Total Members", value: memberCount.toString(), trend: 0, icon: UserPlus },
+        { label: "Active Traffic", value: (todayCount || 0).toString(), trend: 0, icon: Users },
+        { label: "Daily Revenue", value: `${((fStats.revenue || 0) / 1000).toFixed(1)}k`, trend: 0, icon: TrendingUp, colorClass: "text-accent" },
+        { label: "Total Members", value: (memberCount || 0).toString(), trend: 0, icon: UserPlus },
         { label: "Renewals", value: "2", trend: 0, icon: RefreshCw },
     ];
 
@@ -43,7 +43,7 @@ export function DashboardSnapshot() {
                 <Card subtitle="Revenue Velocity" title="History" className="lg:col-span-2">
                     <div className="h-48 flex items-end justify-between gap-3 pt-8 px-4">
                         {(() => {
-                            const data = financeStats.monthlyData || new Array(10).fill({ month: '-', revenue: 0 });
+                            const data = fStats.monthlyData || new Array(10).fill({ month: '-', revenue: 0 });
                             const maxRev = Math.max(...data.map(d => d.revenue), 10); // Min 10k scale
                             return data.map((item, i) => (
                                 <div key={i} className="flex-1 flex flex-col items-center gap-4 h-full justify-end">
@@ -95,7 +95,7 @@ export function DashboardSnapshot() {
                     </div>
                     <div>
                         <h4 className="text-text font-bold text-xl mb-1 tracking-tight">Mobile Settlements</h4>
-                        <p className="text-text font-bold text-4xl tracking-tighter ">{(financeStats.mobileRevenue || 0).toLocaleString()} <span className="text-primary text-xs not- tracking-widest ml-1">RWF</span></p>
+                        <p className="text-text font-bold text-4xl tracking-tighter ">{(fStats.mobileRevenue || 0).toLocaleString()} <span className="text-primary text-xs not- tracking-widest ml-1">RWF</span></p>
                     </div>
                 </Card>
                 <Card className="flex items-center gap-8 p-10 group overflow-hidden relative">
@@ -107,7 +107,7 @@ export function DashboardSnapshot() {
                     </div>
                     <div>
                         <h4 className="text-text font-bold text-xl mb-1 tracking-tight">Front Office Cash</h4>
-                        <p className="text-text font-bold text-4xl tracking-tighter ">{(financeStats.cashRevenue || 0).toLocaleString()} <span className="text-primary text-xs not- tracking-widest ml-1">RWF</span></p>
+                        <p className="text-text font-bold text-4xl tracking-tighter ">{(fStats.cashRevenue || 0).toLocaleString()} <span className="text-primary text-xs not- tracking-widest ml-1">RWF</span></p>
                     </div>
                 </Card>
             </div>

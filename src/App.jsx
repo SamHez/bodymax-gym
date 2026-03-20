@@ -12,11 +12,13 @@ import ExpenseManagement from './components/ExpenseManagement';
 import { ExpiryMonitoring } from './components/ExpiryMonitoring';
 import { MemberEdit } from './components/MemberEdit';
 import { FrontDeskDashboard } from './components/FrontDeskDashboard';
+import { IncomeModal } from './components/IncomeModal';
 import { LoadingScreen } from './components/LoadingScreen';
 import { useTheme } from './lib/useTheme';
 import { cn } from './lib/utils';
 import { supabase } from './lib/supabase';
 import { useToast } from './context/ToastContext';
+import { useFinance } from './lib/data-hooks';
 
 function App() {
   const { showToast } = useToast();
@@ -24,7 +26,9 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [showRegistration, setShowRegistration] = useState(false);
   const [editingMember, setEditingMember] = useState(null);
+  const [incomeModal, setIncomeModal] = useState({ isOpen: false, type: 'Selling Water' });
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const { recordIncome } = useFinance();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -209,6 +213,9 @@ function App() {
                 onNavigate={(tab, subAction) => {
                   navigate(`/${tab}`);
                   if (subAction === 'register') setShowRegistration(true);
+                  if (subAction === 'sell_water') setIncomeModal({ isOpen: true, type: 'Selling Water' });
+                  if (subAction === 'custom_income') setIncomeModal({ isOpen: true, type: 'Custom Income' });
+                  if (subAction === 'finance_reports_add') setIncomeModal({ isOpen: true, type: 'Custom Income' });
                 }}
               />
             </div>
@@ -222,6 +229,8 @@ function App() {
                   (user.role === 'manager' || user.role === 'admin') ? <DashboardSnapshot /> : <FrontDeskDashboard onNavigate={(tab, subAction) => {
                     navigate(`/${tab}`);
                     if (subAction === 'register') setShowRegistration(true);
+                    if (subAction === 'sell_water') setIncomeModal({ isOpen: true, type: 'Selling Water' });
+                    if (subAction === 'custom_income') setIncomeModal({ isOpen: true, type: 'Custom Income' });
                   }} />
                 } />
                 <Route path="/members" element={
@@ -234,7 +243,11 @@ function App() {
                   )
                 } />
                 <Route path="/attendance" element={<AttendanceTracking />} />
-                <Route path="/finance" element={<FinanceReports />} />
+                <Route path="/finance" element={<FinanceReports onNavigate={(tab, subAction) => {
+                  navigate(`/${tab}`);
+                  if (subAction === 'finance_reports_add') setIncomeModal({ isOpen: true, type: 'Custom Income' });
+                  if (subAction === 'sell_water') setIncomeModal({ isOpen: true, type: 'Selling Water' });
+                }} />} />
                 <Route path="/expenses" element={<ExpenseManagement user={user} />} />
                 <Route path="/expiry" element={(user.role === 'manager' || user.role === 'admin') ? <ExpiryMonitoring /> : <Navigate to="/dashboard" />} />
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -246,6 +259,18 @@ function App() {
         </>
       )}
       {!user && <Routes><Route path="*" element={<Login onLogin={setUser} />} /></Routes>}
+      {incomeModal.isOpen && (
+        <IncomeModal
+          isOpen={incomeModal.isOpen}
+          initialType={incomeModal.type}
+          onClose={() => setIncomeModal({ ...incomeModal, isOpen: false })}
+          onConfirm={async (data) => {
+            const success = await recordIncome(data);
+            if (success) showToast("Income record saved successfully", "success");
+            return success;
+          }}
+        />
+      )}
     </div>
   );
 }

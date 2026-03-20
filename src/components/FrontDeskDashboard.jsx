@@ -1,19 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, StatCard } from './Card';
-import { Users, UserPlus, Calendar, Activity, CheckCircle2, TrendingUp, Search, Plus, Receipt } from 'lucide-react';
+import { Users, UserPlus, Calendar, Activity, CheckCircle2, TrendingUp, Search, Plus, Receipt, Smartphone, Wallet } from 'lucide-react';
 import { cn } from '../lib/utils';
-
-import { useAttendance, useMembers, useFinance } from '../lib/data-hooks';
+import { useAttendance, useMembers, useFinance, useMemberDistribution } from '../lib/data-hooks';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../context/ToastContext';
 
 export function FrontDeskDashboard({ onNavigate }) {
     const { showToast } = useToast();
     const [search, setSearch] = useState('');
-    const { todayCount, checkIn, removeCheckIn, checkedInIds, loading: attendanceLoading, refresh: refreshAttendance } = useAttendance();
+    const { 
+        todayCount, 
+        checkedInIds, 
+        historicalData,
+        loading: attendanceLoading, 
+        loadingHistory: attendanceHistoryLoading,
+        checkIn, 
+        removeCheckIn, 
+        fetchHistory,
+        refresh: refreshAttendance 
+    } = useAttendance();
+    
     const { count: memberCount, loading: memberCountLoading } = useMembers({ countOnly: true });
     const { count: expiredCount } = useMembers({ countOnly: true, status: 'Expired' });
     const { count: expiringSoonCount } = useMembers({ countOnly: true, status: 'Expiring Soon' });
+    const { count: activeCount } = useMembers({ countOnly: true, status: 'Active' });
+    const { distribution: memberDistro } = useMemberDistribution();
+    
+    const [attendanceRange, setAttendanceRange] = useState('7d');
+    const [revenueRange, setRevenueRange] = useState('7d');
+
+    useEffect(() => {
+        fetchHistory(attendanceRange);
+    }, [attendanceRange, fetchHistory]);
     const {
         members: searchResults,
         loading: searchLoading,
@@ -109,10 +128,12 @@ export function FrontDeskDashboard({ onNavigate }) {
         }
     };
 
+    const fStats = financeStats || { todayRevenue: 0, todayExpenses: 0, recentTransactions: [], dailyData: [] };
+
     const quickStats = [
-        { label: "Today's Attendance", value: todayCount.toString(), icon: Users, trend: 0 },
-        { label: "Total Members", value: memberCount.toString(), icon: UserPlus, trend: 0 },
-        { label: "Today's Net Balance", value: `RWF ${Math.abs((financeStats.todayRevenue || 0) - (financeStats.todayExpenses || 0)).toLocaleString()}`, icon: Activity, trend: (financeStats.todayRevenue - financeStats.todayExpenses) >= 0 ? 1 : -1 },
+        { label: "Today's Attendance", value: (todayCount || 0).toString(), icon: Users, trend: 0 },
+        { label: "Total Members", value: (memberCount || 0).toString(), icon: UserPlus, trend: 0 },
+        { label: "Today's Net Balance", value: `RWF ${Math.abs((fStats.todayRevenue || 0) - (fStats.todayExpenses || 0)).toLocaleString()}`, icon: Activity, trend: ((fStats.todayRevenue || 0) - (fStats.todayExpenses || 0)) >= 0 ? 1 : -1 },
     ];
 
     return (
@@ -150,171 +171,278 @@ export function FrontDeskDashboard({ onNavigate }) {
                 {quickStats.map((stat, i) => (
                     <StatCard key={i} {...stat} featured={true} />
                 ))}
-            </div>
-
-            {/* Main Action Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                {/* Daily Revenue Velocity Chart */}
-                <Card subtitle="Last 7 Days" title="Revenue">
-                    <div className="h-48 flex items-end justify-between gap-3 pt-8 px-4">
+            </div>            {/* Main Action Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-10">
+                {/* Attendance Trends Chart */}
+                <Card 
+                    title="Attendance Trends" 
+                    subtitle={attendanceRange === '7d' ? "Past 7 Days" : "Past 30 Days"}
+                    extra={
+                        <div className="flex bg-text/5 p-1 rounded-xl">
+                            {['7d', '1m'].map((r) => (
+                                <button
+                                    key={r}
+                                    onClick={() => setAttendanceRange(r)}
+                                    className={cn(
+                                        "px-3 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all",
+                                        attendanceRange === r ? "bg-accent text-surface shadow-sm" : "text-text/40 hover:text-text"
+                                    )}
+                                >
+                                    {r}
+                                </button>
+                            ))}
+                        </div>
+                    }
+                >
+                    <div className="h-48 w-full mt-4 flex items-end justify-between relative px-2">
                         {(() => {
-                            const data = financeStats.dailyData || new Array(7).fill({ day: '-', revenue: 0 });
-                            const maxRev = Math.max(...data.map(d => d.revenue), 10); // Min 10k scale prevents flat bars
-                            return data.map((item, i) => (
-                                <div key={i} className="flex-1 flex flex-col items-center gap-4 h-full justify-end">
-                                    <div
-                                        className={cn(
-                                            "w-full rounded-2xl transition-all duration-[1500ms] relative group min-h-[4px]",
-                                            i === data.length - 1 ? "bg-accent shadow-gold" : "bg-primary/30"
-                                        )}
-                                        style={{ height: `${(item.revenue / maxRev) * 100}%` }}
-                                    >
-                                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-surface text-text border border-text/10 text-[9px] font-bold px-2 py-1 rounded-lg shadow-sm whitespace-nowrap z-20">
-                                            {Math.round(item.revenue)}k
+                            const data = historicalData?.daily || new Array(7).fill({ label: '-', count: 0 });
+                            const maxVal = Math.max(...data.map(d => d.count), 5);
+                            const ticks = [0, maxVal * 0.25, maxVal * 0.5, maxVal * 0.75, maxVal];
+                            
+                            return (
+                                <>
+                                    {/* Y-Axis & Grid Lines */}
+                                    <div className="absolute inset-0 flex flex-col justify-between py-1 pointer-events-none pr-2">
+                                        {ticks.reverse().map((tick, i) => (
+                                            <div key={i} className="flex items-center gap-2 w-full">
+                                                <span className="text-[7px] font-black text-text/10 w-4 text-right tabular-nums">{Math.round(tick)}</span>
+                                                <div className="flex-1 border-b border-text/[0.03]" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                    
+                                    {/* Bars */}
+                                    <div className="flex-1 h-full flex items-end justify-between gap-2 relative z-10 px-6">
+                                        {data.map((item, i) => (
+                                            <div key={i} className="flex-1 flex flex-col items-center gap-3 h-full justify-end group">
+                                                <div
+                                                    className={cn(
+                                                        "w-full rounded-t-xl transition-all duration-[1000ms] relative min-h-[2px]",
+                                                        "bg-gradient-to-t from-secondary/40 to-accent shadow-lg shadow-accent/5 hover:scale-x-110"
+                                                    )}
+                                                    style={{ height: `${(item.count / maxVal) * 100}%` }}
+                                                >
+                                                    <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-surface text-text border border-text/10 text-[8px] font-black px-1.5 py-0.5 rounded-md shadow-sm opacity-0 group-hover/dot:opacity-100 transition-opacity z-20">
+                                                        {item.count}
+                                                    </div>
+                                                </div>
+                                                <span className={cn(
+                                                    "text-[8px] font-bold uppercase tracking-tighter truncate w-full text-center",
+                                                    i === data.length - 1 ? "text-accent" : "text-text/30"
+                                                )}>
+                                                    {item.label.split(',')[0]}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </>
+                            );
+                        })()}
+                    </div>
+                    {historicalData?.peakHour && (
+                        <div className="mt-8 pt-4 border-t border-text/5 flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-text/30 uppercase tracking-[0.2em]">Busiest Time Block</span>
+                            <span className="text-[10px] font-black text-accent uppercase tracking-widest">{historicalData.peakHour} Window</span>
+                        </div>
+                    )}
+                </Card>
+
+                {/* Latest Transactions */}
+                <Card title="Transactions">
+                    <div className="mt-4 space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                        {fStats.recentTransactions && fStats.recentTransactions.length > 0 ? (
+                            fStats.recentTransactions.slice(0, 7).map((tx) => (
+                                <div key={tx.id} className="flex items-center justify-between p-3 bg-text/[0.02] rounded-2xl border border-text/[0.03]">
+                                    <div className="flex items-center gap-3">
+                                        <div className={cn(
+                                            "w-8 h-8 rounded-xl flex items-center justify-center shadow-sm",
+                                            tx.type === 'income'
+                                                ? (tx.method === 'Mobile Money' ? "bg-primary/10 text-primary" : "bg-accent/10 text-accent")
+                                                : "bg-error/10 text-error"
+                                        )}>
+                                            {tx.type === 'income'
+                                                ? (tx.method === 'Mobile Money' ? <Smartphone size={12} /> : <Wallet size={12} />)
+                                                : <Receipt size={12} />
+                                            }
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-[13px] font-bold text-text truncate">{tx.title}</p>
+                                            <p className="text-text/30 text-[10px] font-bold uppercase tracking-wider">{tx.subtitle}</p>
                                         </div>
                                     </div>
-                                    <span className={cn("text-[9px] font-bold uppercase", i === data.length - 1 ? "text-accent" : "text-text/30")}>
-                                        {item.day}
-                                    </span>
+                                    <div className="text-right">
+                                        <p className={cn(
+                                            "text-xs font-bold tracking-tighter",
+                                            tx.type === 'income' ? "text-success" : "text-error"
+                                        )}>
+                                            {tx.type === 'income' ? '+' : '-'}{tx.amount.toLocaleString()}
+                                        </p>
+                                    </div>
                                 </div>
-                            ));
+                            ))
+                        ) : (
+                            <div className="py-20 text-center text-text/10 text-[9px] font-bold uppercase tracking-widest">
+                                No activity today
+                            </div>
+                        )}
+                    </div>
+                </Card>
+            </div>
+
+            {/* Dual Insights Grid: Member Overview & Revenue Trends */}
+            <div className="grid grid-cols-1 lg:grid-cols-[0.8fr_1.2fr] gap-10 mt-10">
+                {/* Member Overview Pie Chart */}
+                <Card 
+                    title="Member Overview" 
+                    subtitle="Categorized Distribution"
+                    className="flex flex-col h-full"
+                >
+                    <div className="flex items-center gap-8 py-4">
+                        <div className="relative w-40 h-40 flex-shrink-0">
+                            <svg viewBox="0 0 160 160" className="w-full h-full -rotate-90">
+                                <circle cx="80" cy="80" r="70" fill="transparent" stroke="currentColor" strokeWidth="16" className="text-text/5" />
+                                {(() => {
+                                    let cumulativePercent = 0;
+                                    const colors = ['var(--color-primary)', 'var(--color-secondary)', 'var(--color-accent)', 'var(--color-success)', 'var(--color-error)'];
+                                    return memberDistro.map((segment, i) => {
+                                        const dashArray = 2 * Math.PI * 70;
+                                        const dashOffset = dashArray - (dashArray * segment.percent) / 100;
+                                        const rotation = (cumulativePercent * 3.6);
+                                        cumulativePercent += segment.percent;
+                                        return (
+                                            <circle
+                                                key={i}
+                                                cx="80"
+                                                cy="80"
+                                                r="70"
+                                                fill="transparent"
+                                                stroke={colors[i % colors.length]}
+                                                strokeWidth="16"
+                                                strokeDasharray={dashArray}
+                                                strokeDashoffset={dashOffset}
+                                                style={{ transformOrigin: 'center', transform: `rotate(${rotation}deg)` }}
+                                                className="transition-all duration-1000 ease-out"
+                                            />
+                                        );
+                                    });
+                                })()}
+                            </svg>
+                            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                <span className="text-3xl font-black tracking-tighter text-text">{memberCount}</span>
+                                <span className="text-[8px] font-black uppercase text-text/30 tracking-widest">Members</span>
+                            </div>
+                        </div>
+                        <div className="flex-1 space-y-3">
+                            {memberDistro.slice(0, 4).map((m, i) => (
+                                <div key={i} className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ['var(--color-primary)', 'var(--color-secondary)', 'var(--color-accent)', 'var(--color-success)'][i] }} />
+                                        <span className="text-[10px] font-bold text-text/70 uppercase tracking-wider truncate max-w-[80px]">{m.name}</span>
+                                    </div>
+                                    <span className="text-[10px] font-black text-text tabular-nums">{Math.round(m.percent)}%</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    
+                    {/* Status Snapshots */}
+                    <div className="mt-8 pt-6 border-t border-text/5 grid grid-cols-3 gap-4">
+                        <div className="text-center">
+                            <p className="text-[18px] font-black text-success tracking-tighter">{activeCount}</p>
+                            <p className="text-[8px] font-black text-text/30 uppercase tracking-widest">Active</p>
+                        </div>
+                        <div className="text-center">
+                            <p className="text-[18px] font-black text-error tracking-tighter">{expiredCount}</p>
+                            <p className="text-[8px] font-black text-text/30 uppercase tracking-widest">Expired</p>
+                        </div>
+                        <div className="text-center">
+                            <p className="text-[18px] font-black text-accent tracking-tighter">{expiringSoonCount}</p>
+                            <p className="text-[8px] font-black text-text/30 uppercase tracking-widest">Soon</p>
+                        </div>
+                    </div>
+                </Card>
+
+                <Card 
+                    title="Revenue Trend" 
+                    subtitle="Daily Inflow Velocity"
+                    extra={
+                        <div className="flex bg-text/5 p-1 rounded-xl">
+                            {['7d', '1m'].map((r) => (
+                                <button
+                                    key={r}
+                                    onClick={() => setRevenueRange(r)}
+                                    className={cn(
+                                        "px-3 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all",
+                                        revenueRange === r ? "bg-primary text-surface shadow-sm" : "text-text/40 hover:text-text"
+                                    )}
+                                >
+                                    {r}
+                                </button>
+                            ))}
+                        </div>
+                    }
+                >
+                    <div className="h-56 w-full mt-6 flex relative">
+                        {(() => {
+                            const data = financeStats.dailyData || [];
+                            if (data.length < 2) return (
+                                <div className="h-full w-full flex items-center justify-center text-text/10 text-[9px] font-black uppercase tracking-[0.3em]">
+                                    Awaiting Trend Data...
+                                </div>
+                            );
+
+                            const maxRev = Math.max(...data.map(d => d.revenue), 1000);
+                            const scaleMax = maxRev * 1.2;
+                            const ticks = [0, scaleMax * 0.25, scaleMax * 0.5, scaleMax * 0.75, scaleMax];
+                            
+                            const points = data.map((d, i) => ({
+                                x: (i / (data.length - 1)) * 100,
+                                y: 100 - (d.revenue / scaleMax) * 100
+                            }));
+                            
+                            const pathStr = `M ${points.map(p => `${p.x},${p.y}`).join(' L ')}`;
+                            const areaStr = `${pathStr} L ${points[points.length - 1].x},100 L 0,100 Z`;
+
+                            return (
+                                <>
+                                    {/* Y-Axis Labels */}
+                                    <div className="absolute left-0 top-0 bottom-0 flex flex-col justify-between py-1 pr-2 border-r border-text/5 h-full w-10 pointer-events-none">
+                                        {ticks.reverse().map((t, i) => (
+                                            <span key={i} className="text-[7px] font-black text-text/20 text-right tabular-nums">
+                                                {t >= 1000 ? `${Math.round(t / 1000)}k` : Math.round(t)}
+                                            </span>
+                                        ))}
+                                    </div>
+                                    
+                                    <div className="flex-1 h-full pl-2 relative">
+                                        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full overflow-visible">
+                                            <defs>
+                                                <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.2" />
+                                                    <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0" />
+                                                </linearGradient>
+                                            </defs>
+                                            
+                                            {/* Grid Lines */}
+                                            {ticks.map((t, i) => (
+                                                <line key={i} x1="0" y1={100 - (t / scaleMax) * 100} x2="100" y2={100 - (t / scaleMax) * 100} stroke="currentColor" className="text-text/[0.03]" strokeWidth="0.5" strokeDasharray="2 2" />
+                                            ))}
+
+                                            <path d={areaStr} fill="url(#revGrad)" />
+                                            <path d={pathStr} fill="none" stroke="var(--color-primary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                            
+                                            {/* Data Points */}
+                                            {points.map((p, i) => (
+                                                <circle key={i} cx={p.x} cy={p.y} r="1" className="fill-surface stroke-primary stroke-[0.3]" />
+                                            ))}
+                                        </svg>
+                                    </div>
+                                </>
+                            );
                         })()}
                     </div>
                 </Card>
-
-                {/* Quick Search & Filter */}
-                <Card subtitle="Member Registry" title="Quick Search">
-                    <div className="mt-6 space-y-6">
-                        <div className="relative group">
-                            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-text/20 group-focus-within:text-accent transition-colors" size={20} />
-                            <input
-                                type="text"
-                                placeholder="FIND BY NAME OR PHONE..."
-                                className="w-full bg-text/[0.03] border border-text/5 rounded-[2rem] py-6 pl-16 pr-8 text-xs font-bold uppercase tracking-widest focus:outline-none focus:border-accent/30 focus:bg-white transition-all shadow-inner"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                            />
-                        </div>
-
-                        {/* Search Results List */}
-                        {search.trim() !== '' && (
-                            <div className="bg-surface rounded-3xl border border-text/5 divide-y divide-text/5 overflow-hidden shadow-premium animate-in slide-in-from-top-4 duration-300">
-                                {searchLoading ? (
-                                    <div className="p-6 text-center text-text/20 text-[10px] font-bold uppercase tracking-widest">
-                                        Searching registry...
-                                    </div>
-                                ) : searchResults.length === 0 ? (
-                                    <div className="p-6 text-center text-text/20 text-[10px] font-bold uppercase tracking-widest">
-                                        No assets identified
-                                    </div>
-                                ) : (
-                                    searchResults.map(member => (
-                                        <div
-                                            key={member.id}
-                                            className="p-4 hover:bg-text/[0.02] group flex items-center justify-between"
-                                        >
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 rounded-xl bg-surface border border-text/5 flex items-center justify-center text-text/20 group-hover:text-primary transition-colors">
-                                                    <Users size={16} />
-                                                </div>
-                                                <div>
-                                                    <p className="text-text font-bold text-xs uppercase">{member.full_name}</p>
-                                                    <p className="text-text/30 text-[9px] font-bold uppercase tracking-widest">{member.category}</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-3">
-                                                <div className={cn(
-                                                    "px-3 py-1 rounded-lg text-[8px] font-bold uppercase tracking-tighter",
-                                                    member.status === 'Active' ? "bg-success/10 text-success border border-success/20" :
-                                                        member.status === 'Expiring Soon' ? "bg-accent/10 text-accent border border-accent/20" :
-                                                            "bg-error/10 text-error border border-error/20"
-                                                )}>
-                                                    {member.status}
-                                                </div>
-                                                {member.status !== 'Expired' && (
-                                                    <button
-                                                        onClick={() => checkedInIds.includes(member.id) ? handleRemove(member.id) : handleCheckIn(member.id)}
-                                                        className={cn(
-                                                            "p-2 rounded-lg transition-colors shadow-sm",
-                                                            checkedInIds.includes(member.id)
-                                                                ? "bg-success text-white hover:bg-error"
-                                                                : "bg-primary text-white hover:bg-accent"
-                                                        )}
-                                                        title={checkedInIds.includes(member.id) ? "Undo Check-in" : "Quick Check-in"}
-                                                    >
-                                                        <CheckCircle2 size={12} strokeWidth={3} />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-                        )}
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="p-6 bg-surface rounded-3xl border border-text/5 text-center group hover:border-accent/20 transition-all cursor-pointer">
-                                <span className="block text-text/20 text-[9px] font-bold uppercase tracking-[0.2em] mb-2">Expired</span>
-                                <span className="text-2xl font-bold ">{expiredCount}</span>
-                            </div>
-                            <div className="p-6 bg-surface rounded-3xl border border-text/5 text-center group hover:border-accent/20 transition-all cursor-pointer">
-                                <span className="block text-text/20 text-[9px] font-bold uppercase tracking-[0.2em] mb-2">Expiring Soon</span>
-                                <span className="text-2xl font-bold  text-accent">{expiringSoonCount}</span>
-                            </div>
-                        </div>
-
-                        <div className="hidden bg-primary/5 p-6 rounded-[2.5rem] border border-primary/10 flex items-center justify-between">
-                            <div>
-                                <p className="text-primary text-[10px] font-bold uppercase tracking-widest mb-1">Gate System Status</p>
-                                <p className="text-text font-bold text-lg  uppercase">Online & Operational</p>
-                            </div>
-                            <div className="w-14 h-14 rounded-2.5xl bg-primary text-surface flex items-center justify-center shadow-lg">
-                                <CheckCircle2 size={24} strokeWidth={2.5} />
-                            </div>
-                        </div>
-                    </div>
-                </Card>
-            </div>
-
-            {/* Front Desk Priorities */}
-            <div className="bg-accent rounded-[3rem] p-12 text-surface overflow-hidden relative shadow-gold">
-                <div className="absolute -top-20 -right-20 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
-                <div className="absolute bottom-0 left-1/4 w-40 h-40 bg-black/5 rounded-full blur-2xl" />
-
-                <div className="relative z-10 space-y-8">
-                    <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-                        <div className="text-center md:text-left">
-                            <h3 className="text-4xl font-bold tracking-tighter uppercase mb-2">Front Desk Priorities</h3>
-                            <p className="text-surface/70 font-bold uppercase tracking-widest text-[10px]">
-                                Focus on renewals, expiring memberships, and daily cash flow.
-                            </p>
-                        </div>
-                        <div className="text-center md:text-right">
-                            <p className="text-5xl font-bold tracking-tighter leading-none mb-2">{todayCount}</p>
-                            <p className="text-surface/50 text-[9px] font-bold uppercase tracking-widest">Members Checked In Today</p>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="rounded-[2rem] bg-white/10 border border-white/10 p-6">
-                            <p className="text-surface/60 text-[9px] font-bold uppercase tracking-[0.2em] mb-2">Expired Memberships</p>
-                            <p className="text-3xl font-bold tracking-tighter leading-none">{expiredCount}</p>
-                            <p className="text-surface/70 text-[10px] font-bold uppercase tracking-widest mt-3">Need renewal before entry</p>
-                        </div>
-                        <div className="rounded-[2rem] bg-white/10 border border-white/10 p-6">
-                            <p className="text-surface/60 text-[9px] font-bold uppercase tracking-[0.2em] mb-2">Expiring Soon</p>
-                            <p className="text-3xl font-bold tracking-tighter leading-none">{expiringSoonCount}</p>
-                            <p className="text-surface/70 text-[10px] font-bold uppercase tracking-widest mt-3">Best upsell opportunity today</p>
-                        </div>
-                        <div className="rounded-[2rem] bg-white/10 border border-white/10 p-6">
-                            <p className="text-surface/60 text-[9px] font-bold uppercase tracking-[0.2em] mb-2">Today's Net Balance</p>
-                            <p className="text-3xl font-bold tracking-tighter leading-none">
-                                RWF {Math.abs((financeStats.todayRevenue || 0) - (financeStats.todayExpenses || 0)).toLocaleString()}
-                            </p>
-                            <p className="text-surface/70 text-[10px] font-bold uppercase tracking-widest mt-3">Revenue after expenses today</p>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     );
