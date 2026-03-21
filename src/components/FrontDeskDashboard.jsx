@@ -5,6 +5,7 @@ import { cn } from '../lib/utils';
 import { useAttendance, useMembers, useFinance, useMemberDistribution } from '../lib/data-hooks';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../context/ToastContext';
+import { ReportDropdown } from './ReportDropdown';
 
 export function FrontDeskDashboard({ onNavigate }) {
     const { showToast } = useToast();
@@ -157,7 +158,8 @@ export function FrontDeskDashboard({ onNavigate }) {
                     <p className="text-accent text-[10px] font-bold uppercase tracking-[0.3em] leading-none">Front Desk</p>
                     <h2 className="text-text text-[25px] font-bold tracking-tighter leading-tight uppercase">Dashboard</h2>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2 justify-end">
+                    <ReportDropdown />
                     <button
                         onClick={() => onNavigate('attendance')}
                         className="flex items-center gap-2 bg-text/5 text-text px-4 py-2 rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:bg-text/10 transition-all border border-text/5"

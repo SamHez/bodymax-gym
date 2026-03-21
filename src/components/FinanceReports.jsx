@@ -3,6 +3,7 @@ import { Card } from './Card';
 import { TrendingUp, Wallet, Smartphone, Loader2, Receipt, CircleDollarSign, Plus } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useFinance } from '../lib/data-hooks';
+import { ReportDropdown } from './ReportDropdown';
 
 export function FinanceReports({ onNavigate }) {
     const { stats: rawStats, loading } = useFinance();
@@ -63,6 +64,7 @@ export function FinanceReports({ onNavigate }) {
                     <p className="text-text text-3xl md:text-4xl font-bold tracking-tighter leading-none uppercase">FINANCES</p>
                 </div>
                 <div className="hidden md:flex gap-4">
+                    <ReportDropdown />
                     <button
                         onClick={() => onNavigate('finance', 'finance_reports_add')}
                         className="flex items-center gap-3 bg-primary text-white px-8 py-4 rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:scale-105 active:scale-95 transition-all shadow-xl shadow-primary/20"

@@ -13,7 +13,12 @@ import {
     LogOut,
     Search,
     Plus,
-    CheckCircle2
+    CheckCircle2,
+    TrendingUp,
+    FileText,
+    Download,
+    Mail,
+    UserPlus
 } from 'lucide-react';
 import { useTheme } from '../lib/useTheme';
 import logo from '../assets/logo.png';
@@ -25,13 +30,25 @@ import { useMembers, useAttendance } from '../lib/data-hooks';
 export function Sidebar({ activeTab, user, onLogout, isCollapsed, onToggleCollapse }) {
     const { theme, toggleTheme } = useTheme();
 
-    const allTabs = [
+    const isManager = user?.role === 'manager' || user?.role === 'admin';
+
+    const tabsManager = [
         { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', role: 'both' },
+        { id: 'finance', icon: CreditCard, label: 'Finance', path: '/finance', role: 'both' },
+        { id: 'expenses', icon: Receipt, label: 'Expenses', path: '/expenses', role: 'both' },
         { id: 'members', icon: Users, label: 'Members', path: '/members', role: 'both' },
         { id: 'attendance', icon: UserCheck, label: 'Attendance', path: '/attendance', role: 'both' },
+    ];
+
+    const tabsFrontDesk = [
+        { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', role: 'both' },
+        { id: 'attendance', icon: UserCheck, label: 'Attendance', path: '/attendance', role: 'both' },
+        { id: 'members', icon: Users, label: 'Members', path: '/members', role: 'both' },
         { id: 'expenses', icon: Receipt, label: 'Expenses', path: '/expenses', role: 'both' },
         { id: 'finance', icon: CreditCard, label: 'Finance', path: '/finance', role: 'both' },
     ];
+
+    const allTabs = isManager ? tabsManager : tabsFrontDesk;
 
     const filteredTabs = allTabs.filter(tab =>
         tab.role === 'both' || tab.role === user?.role
@@ -150,9 +167,8 @@ export function TopNav({ user, onLogout, isSidebarCollapsed, activeTab, onNaviga
                 <img src={logo} alt="BodyMax Gym" className="h-10 w-auto flex-shrink-0" />
             )}
 
-            {/* Wide Search Bar (front-desk) */}
-            {isFrontDesk ? (
-                <div ref={searchRef} className="flex-1 max-w-xl relative">
+            {/* Wide Search Bar */}
+            <div ref={searchRef} className="flex-1 max-w-xl relative">
                     <div className="relative group">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text/30 group-focus-within:text-accent transition-colors" size={15} />
                         <input
@@ -203,12 +219,9 @@ export function TopNav({ user, onLogout, isSidebarCollapsed, activeTab, onNaviga
                         </div>
                     )}
                 </div>
-            ) : (
-                <div className="flex-1" />
-            )}
 
-            {/* Quick Actions dropdown — front-desk, all pages */}
-            {isFrontDesk && onNavigate && (
+            {/* Quick Actions dropdown — all pages */}
+            {onNavigate && (
                 <div ref={actionsRef} className="relative flex-shrink-0">
                     <button
                         onClick={() => setActionsOpen(!actionsOpen)}
@@ -219,7 +232,7 @@ export function TopNav({ user, onLogout, isSidebarCollapsed, activeTab, onNaviga
                         <ChevronRight size={11} className={cn("transition-transform", actionsOpen ? "rotate-90" : "rotate-0")} />
                     </button>
                     {actionsOpen && (
-                        <div className="absolute top-full right-0 mt-2 w-48 bg-card border border-text/5 rounded-2xl shadow-xl overflow-hidden z-50 divide-y divide-text/5">
+                        <div className="absolute top-full right-0 mt-2 w-56 bg-card border border-text/5 rounded-2xl shadow-xl overflow-visible z-50 divide-y divide-text/5">
                             <button
                                 onClick={() => { onNavigate('attendance'); setActionsOpen(false); }}
                                 className="w-full flex items-center gap-3 px-5 py-3.5 text-[10px] font-bold uppercase tracking-widest text-text/70 hover:text-text hover:bg-surface transition-all"
@@ -227,10 +240,10 @@ export function TopNav({ user, onLogout, isSidebarCollapsed, activeTab, onNaviga
                                 <UserCheck size={14} strokeWidth={2.5} className="text-primary" /> Check-in
                             </button>
                             <button
-                                onClick={() => { onNavigate('finance', 'custom_income'); setActionsOpen(false); }}
+                                onClick={() => { onNavigate('members', 'register'); setActionsOpen(false); }}
                                 className="w-full flex items-center gap-3 px-5 py-3.5 text-[10px] font-bold uppercase tracking-widest text-text/70 hover:text-text hover:bg-surface transition-all"
                             >
-                                <Plus size={14} strokeWidth={3} className="text-success" /> Custom Income
+                                <UserPlus size={14} strokeWidth={2.5} className="text-success" /> New Member
                             </button>
                             <button
                                 onClick={() => { onNavigate('expenses'); setActionsOpen(false); }}
@@ -239,11 +252,33 @@ export function TopNav({ user, onLogout, isSidebarCollapsed, activeTab, onNaviga
                                 <Receipt size={14} strokeWidth={2.5} className="text-accent" /> Log Expense
                             </button>
                             <button
-                                onClick={() => { onNavigate('members', 'register'); setActionsOpen(false); }}
+                                onClick={() => { onNavigate('finance', 'custom_income'); setActionsOpen(false); }}
                                 className="w-full flex items-center gap-3 px-5 py-3.5 text-[10px] font-bold uppercase tracking-widest text-text/70 hover:text-text hover:bg-surface transition-all"
                             >
-                                <Plus size={14} strokeWidth={3} className="text-success" /> New Member
+                                <Plus size={14} strokeWidth={3} className="text-success" /> Log Income
                             </button>
+
+                            {/* Nested Generate Report Menu */}
+                            <div className="relative group/report">
+                                <button className="w-full flex items-center justify-between px-5 py-3.5 text-[10px] font-bold uppercase tracking-widest text-text/70 hover:text-text hover:bg-surface transition-all">
+                                    <div className="flex items-center gap-3">
+                                        <TrendingUp size={14} strokeWidth={2.5} className="text-primary" /> Generate Report
+                                    </div>
+                                    <ChevronRight size={12} className="opacity-50 group-hover/report:opacity-100 transition-opacity" />
+                                </button>
+                                {/* Submenu */}
+                                <div className="absolute right-[calc(100%+0.5rem)] top-0 w-48 bg-card border border-text/5 rounded-2xl shadow-xl overflow-hidden invisible opacity-0 translate-x-2 group-hover/report:visible group-hover/report:opacity-100 group-hover/report:translate-x-0 transition-all divide-y divide-text/5">
+                                    <button onClick={() => { console.log('PDF'); setActionsOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-text/70 hover:text-text hover:bg-surface transition-all">
+                                        <FileText size={13} strokeWidth={2.5} className="text-error" /> PDF Report
+                                    </button>
+                                    <button onClick={() => { console.log('Excel'); setActionsOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-text/70 hover:text-text hover:bg-surface transition-all">
+                                        <Download size={13} strokeWidth={2.5} className="text-success" /> Excel Report
+                                    </button>
+                                    <button onClick={() => { console.log('Email'); setActionsOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-text/70 hover:text-text hover:bg-surface transition-all">
+                                        <Mail size={13} strokeWidth={2.5} className="text-accent" /> Send to Email
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>
