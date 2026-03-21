@@ -99,6 +99,13 @@ export function useMembers(options = {}) {
         return true;
     });
 
+    const [stats, setStats] = useState({
+        total: 0,
+        newThisWeek: 0,
+        expiringSoon: 0,
+        active: 0
+    });
+
     const fetchMembers = useCallback(async ({ force = false } = {}) => {
         if (!enabled) {
             setLoading(false);
@@ -173,7 +180,52 @@ export function useMembers(options = {}) {
         }
 
         if (data) {
+            // Reconcile Statuses based on expiry_date
+            const today = new Date().toISOString().split('T')[0];
+            const sevenDaysFromNow = new Date();
+            sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+            const sevenDaysStr = sevenDaysFromNow.toISOString().split('T')[0];
+
+            let needsRefresh = false;
+            const toExpire = data.filter(m => m.expiry_date < today && m.status !== 'Expired');
+            const toExpiringSoon = data.filter(m => m.expiry_date >= today && m.expiry_date <= sevenDaysStr && m.status !== 'Expiring Soon');
+            const toActive = data.filter(m => m.expiry_date > sevenDaysStr && m.status !== 'Active');
+
+            if (toExpire.length > 0) {
+                await supabase.from('members').update({ status: 'Expired' }).in('id', toExpire.map(m => m.id));
+                needsRefresh = true;
+            }
+            if (toExpiringSoon.length > 0) {
+                await supabase.from('members').update({ status: 'Expiring Soon' }).in('id', toExpiringSoon.map(m => m.id));
+                needsRefresh = true;
+            }
+            if (toActive.length > 0) {
+                await supabase.from('members').update({ status: 'Active' }).in('id', toActive.map(m => m.id));
+                needsRefresh = true;
+            }
+
+            if (needsRefresh && !isSearchQuery) {
+                // Fetch again to get updated statuses for cache
+                return fetchMembers({ force: true });
+            }
+
+            // Calculate Stats for Summary Cards
+            const weekAgo = new Date();
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            const weekAgoStr = weekAgo.toISOString();
+
+            const newThisWeekCount = data.filter(m => m.created_at >= weekAgoStr).length;
+            const expiringSoonCount = data.filter(m => m.status === 'Expiring Soon').length;
+            const activeCount = data.filter(m => m.status === 'Active').length;
+
             setMembers(data);
+            setStats({
+                total: data.length,
+                newThisWeek: newThisWeekCount,
+                expiringSoon: expiringSoonCount,
+                active: activeCount
+            });
+
             if (!isSearchQuery) {
                 updateMembersListCache(data);
             }
@@ -195,7 +247,7 @@ export function useMembers(options = {}) {
                 .eq('id', id);
 
             if (error) throw error;
-            
+
             showToast("Member record permanently deleted", "success");
             setMembers(prev => prev.filter(m => m.id !== id));
             decrementMemberCaches(id);
@@ -210,6 +262,7 @@ export function useMembers(options = {}) {
 
     return {
         members,
+        stats,
         count,
         loading,
         deleteMember,
@@ -328,9 +381,38 @@ export function useAttendance() {
             const sortedHours = Object.entries(hourMap).sort((a, b) => b[1] - a[1]);
             const peakHour = sortedHours[0] ? `${sortedHours[0][0]}:00` : 'N/A';
 
+            // Peak Day Analysis
+            const sortedDays = Object.values(dailyMap).sort((a, b) => b.count - a.count);
+            let peakDay = 'N/A';
+            if (sortedDays[0]?.count > 0) {
+                const pd = new Date(sortedDays[0].date);
+                const dayName = pd.toLocaleDateString('en-US', { weekday: 'short' });
+                const monthName = pd.toLocaleDateString('en-US', { month: 'short' });
+                const d = pd.getDate();
+                const suffix = ["th", "st", "nd", "rd"][(d % 10 > 3 || Math.floor(d % 100 / 10) === 1) ? 0 : d % 10];
+                peakDay = `${d}${suffix} ${dayName} `;
+            }
+
+            // Average Daily Attendance
+            const avgDaily = Math.round(data.length / days);
+
+            // Today vs Yesterday Velocity
+            const todayDateStr = new Date().toISOString().split('T')[0];
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayDateStr = yesterday.toISOString().split('T')[0];
+            const todayCountVal = dailyMap[todayDateStr]?.count || 0;
+            const yesterdayCountVal = dailyMap[yesterdayDateStr]?.count || 0;
+            const growth = yesterdayCountVal > 0
+                ? Math.round(((todayCountVal - yesterdayCountVal) / yesterdayCountVal) * 100)
+                : (todayCountVal > 0 ? 100 : 0);
+
             setHistoricalData({
                 daily: Object.values(dailyMap),
                 peakHour,
+                peakDay,
+                avgDaily,
+                growth,
                 total: data.length
             });
         }
@@ -379,16 +461,16 @@ export function useAttendance() {
         return false;
     };
 
-    return { 
-        todayCount, 
-        checkedInIds, 
+    return {
+        todayCount,
+        checkedInIds,
         historicalData,
-        loading, 
+        loading,
         loadingHistory,
-        checkIn, 
-        removeCheckIn, 
+        checkIn,
+        removeCheckIn,
         fetchHistory,
-        refresh: () => fetchAttendance({ force: true }) 
+        refresh: () => fetchAttendance({ force: true })
     };
 }
 
@@ -468,7 +550,7 @@ export function useExpenses() {
                 const next = prev.filter(e => e.id !== id);
                 expensesCache = next;
                 expensesCacheAt = Date.now();
-                
+
                 // Update finance cache
                 if (financeCache && deletedExpense) {
                     financeCache = {
@@ -623,10 +705,10 @@ export function useFinance() {
                 ...payData.map((payment) => ({
                     id: payment.id,
                     type: 'income',
-                    title: payment.category === 'Membership' 
+                    title: payment.category === 'Membership'
                         ? (payment.members?.full_name || 'Walk-in Member')
                         : (payment.description || payment.category),
-                    subtitle: payment.category === 'Membership' 
+                    subtitle: payment.category === 'Membership'
                         ? (payment.members?.member_code || 'N/A')
                         : payment.category,
                     amount: Number(payment.amount),
@@ -643,8 +725,8 @@ export function useFinance() {
                     date: expense.expense_date,
                 }))
             ]
-            .sort((a, b) => new Date(b.date) - new Date(a.date))
-            .slice(0, 15);
+                .sort((a, b) => new Date(b.date) - new Date(a.date))
+                .slice(0, 15);
 
             const nextStats = {
                 revenue: totalRev,

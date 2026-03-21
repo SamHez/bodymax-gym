@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from './Card';
 import { CheckCircle2, Search, ShieldAlert, Ticket, X, Check, UserCheck, Loader2 } from 'lucide-react';
 import { cn } from '../lib/utils';
@@ -16,7 +16,11 @@ export function AttendanceTracking() {
         m.full_name?.toLowerCase().includes(search.toLowerCase()) ||
         m.phone?.toLowerCase().includes(search.toLowerCase())
     );
-    const { todayCount, checkIn, removeCheckIn, checkedInIds, refresh: refreshAttendance } = useAttendance();
+    const { todayCount, checkIn, removeCheckIn, checkedInIds, refresh: refreshAttendance, historicalData, fetchHistory } = useAttendance();
+
+    useEffect(() => {
+        fetchHistory('30d');
+    }, [fetchHistory]);
 
     const handleCheckIn = async (id) => {
         await checkIn(id);
@@ -90,30 +94,58 @@ export function AttendanceTracking() {
 
     return (
         <div className="space-y-10 max-w-5xl mx-auto">
-            {/* Real-time Counter Header */}
-            <div className="flex justify-between items-center bg-card p-6 md:p-12 rounded-[2.5rem] md:rounded-[3.5rem] border border-text/5 shadow-premium relative group">
-                <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:rotate-12 transition-transform duration-1000 hidden md:block">
-                    <UserCheck size={200} />
+            {/* Header */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+                <div>
+                    <h2 className="text-accent text-[11px] font-bold uppercase tracking-[0.4em] mb-2 leading-none">Asset Presence</h2>
+                    <p className="text-text text-3xl md:text-4xl font-bold tracking-tighter leading-none uppercase">ATTENDANCE</p>
                 </div>
-                <div className="z-10">
-                    <h2 className="text-accent text-[9px] md:text-[11px] font-bold uppercase tracking-[0.5em] mb-2 leading-none ">Asset Presence</h2>
-                    <p className="text-text text-2xl md:text-3xl font-bold tracking-tighter leading-none uppercase">CHECK-IN</p>
-                </div>
-                <div className="flex items-center gap-4 md:gap-10 z-10">
-                    <div className="text-right">
-                        <p className="text-accent font-bold text-3xl md:text-6xl tracking-tighter tabular-nums leading-none ">{todayCount}</p>
-                        <p className="hidden md:block text-text/20 text-[10px] font-bold uppercase tracking-[0.2em] mt-3">Daily Operations Pool</p>
-                        <p className="md:hidden text-text/20 text-[8px] font-bold uppercase tracking-[0.2em] mt-1">Today</p>
+
+                <button
+                    onClick={() => setShowDailyPassModal(true)}
+                    className="flex items-center gap-3 bg-accent text-surface px-8 py-5 rounded-[2.5rem] font-bold uppercase tracking-widest text-xs hover:scale-105 active:scale-95 transition-all shadow-xl shadow-accent/20"
+                >
+                    <Ticket size={18} strokeWidth={3} />
+                    Daily Pass
+                </button>
+            </div>
+
+            {/* Quick Stats Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <Card className="liquid-glass border-none shadow-xl shadow-accent/10">
+                    <p className="text-accent/60 text-[9px] font-bold uppercase tracking-[0.2em] mb-4">Today's Checks</p>
+                    <div className="flex items-end gap-2">
+                        <h3 className="text-4xl font-bold tracking-tighter text-text leading-none">{todayCount}</h3>
+                        <span className={cn(
+                            "text-[10px] font-bold mb-1 ml-2",
+                            historicalData?.growth > 0 ? "text-success" : historicalData?.growth < 0 ? "text-error" : "text-text/40"
+                        )}>
+                            {historicalData?.growth > 0 ? '↑' : historicalData?.growth < 0 ? '↓' : ''} {Math.abs(historicalData?.growth || 0)}%
+                        </span>
                     </div>
-                    <div className="w-[1px] h-12 md:h-20 bg-text/5" />
-                    <button
-                        onClick={() => setShowDailyPassModal(true)}
-                        className="flex items-center gap-4 p-4 md:px-8 md:py-6 bg-accent text-surface rounded-2xl md:rounded-[2rem] transition-all active:scale-90 shadow-xl shadow-accent/20 group/dp"
-                    >
-                        <Ticket size={24} className="md:w-8 md:h-8 group-hover/dp:rotate-6 transition-transform" />
-                        <span className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.2em]">Daily Pass</span>
-                    </button>
-                </div>
+                </Card>
+
+                <Card>
+                    <p className="text-text/30 text-[9px] font-bold uppercase tracking-[0.2em] mb-4">Peak Activity Day</p>
+                    <div className="flex items-end gap-2">
+                        <h3 className="text-3xl font-bold tracking-tighter text-text leading-none">{historicalData?.peakDay || '-'}</h3>
+                    </div>
+                </Card>
+
+                <Card>
+                    <p className="text-text/30 text-[9px] font-bold uppercase tracking-[0.2em] mb-4">Busiest Window</p>
+                    <div className="flex items-end gap-2">
+                        <h3 className="text-3xl font-bold tracking-tighter text-text leading-none">{historicalData?.peakHour || '-'}</h3>
+                    </div>
+                </Card>
+
+                <Card>
+                    <p className="text-text/30 text-[9px] font-bold uppercase tracking-[0.2em] mb-4">Daily Baseline</p>
+                    <div className="flex items-end gap-2">
+                        <h3 className="text-3xl font-bold tracking-tighter text-text leading-none">{historicalData?.avgDaily || 0}</h3>
+                        <span className="text-[11px] font-bold text-text/40 mb-1">/ day</span>
+                    </div>
+                </Card>
             </div>
 
             {/* Strategic Command Input */}

@@ -220,13 +220,13 @@ export default function ExpenseManagement({ user }) {
                 <div className="space-y-8">
                     <Card title="Allocation">
                         <div className="space-y-6 pt-6">
-                            {categories.map(cat => {
-                                const amount = stats.expenseCategories?.[cat] || 0;
-                                const percent = stats.expenses > 0 ? (amount / stats.expenses) * 100 : 0;
+                            {(stats.expenseBreakdown || []).map(item => {
+                                const amount = item.amount || 0;
+                                const percent = item.percent || 0;
                                 return (
-                                    <div key={cat} className="space-y-3">
+                                    <div key={item.category} className="space-y-3">
                                         <div className="flex justify-between items-end px-2">
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-text/40 ">{cat}</span>
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-text/40 ">{item.category}</span>
                                             <span className="text-xs font-bold text-text tracking-tighter">{amount.toLocaleString()}</span>
                                         </div>
                                         <div className="h-2 w-full bg-surface rounded-full overflow-hidden border border-text/5">
@@ -238,6 +238,9 @@ export default function ExpenseManagement({ user }) {
                                     </div>
                                 );
                             })}
+                            {(!stats.expenseBreakdown || stats.expenseBreakdown.length === 0) && (
+                                <p className="text-center text-text/20 text-[10px] font-bold uppercase tracking-widest py-10">No data available</p>
+                            )}
                         </div>
                     </Card>
 

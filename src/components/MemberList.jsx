@@ -9,7 +9,7 @@ import { ConfirmationModal } from './ConfirmationModal';
 
 export function MemberList({ onAddMember, onEditMember }) {
     const [search, setSearch] = useState('');
-    const { members, loading, deleteMember } = useMembers();
+    const { members, loading, deleteMember, stats } = useMembers();
     const [selectedMember, setSelectedMember] = useState(null);
     const [menuOpenId, setMenuOpenId] = useState(null);
     const [memberToDelete, setMemberToDelete] = useState(null);
@@ -45,20 +45,47 @@ export function MemberList({ onAddMember, onEditMember }) {
     return (
         <div className="space-y-10" onClick={() => setMenuOpenId(null)}>
             {/* Directory Header */}
-            <div className="flex justify-between items-center bg-card p-6 md:p-10 rounded-[2.5rem] md:rounded-[3rem] border border-text/5 shadow-premium relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[80px]" />
+            {/* Header */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-8">
                 <div>
-                    <h2 className="text-primary text-[9px] md:text-[10px] font-bold uppercase tracking-[0.4em] mb-1 leading-none hidden ">Asset Database</h2>
-                    <p className="text-text text-2xl md:text-4xl font-bold tracking-tighter leading-none uppercase">MEMBERS</p>
+                    <h2 className="text-primary text-[11px] font-bold uppercase tracking-[0.4em] mb-2 leading-none">Asset Database</h2>
+                    <p className="text-text text-3xl md:text-4xl font-bold tracking-tighter leading-none uppercase">MEMBERS</p>
                 </div>
 
                 <button
                     onClick={onAddMember}
-                    className="flex items-center gap-3 p-4 md:px-8 md:py-5 bg-primary text-white rounded-2xl md:rounded-3xl shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all font-bold text-xs uppercase tracking-widest z-10"
+                    className="flex items-center gap-3 bg-primary text-white px-8 py-5 rounded-[2.5rem] font-bold uppercase tracking-widest text-xs hover:scale-105 active:scale-95 transition-all shadow-xl shadow-primary/20"
                 >
-                    <Plus size={20} strokeWidth={3} />
-                    <span className="hidden md:inline">Register New</span>
+                    <Plus size={18} strokeWidth={3} />
+                    Register New
                 </button>
+            </div>
+
+            {/* Quick Stats Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+                <Card className="liquid-glass border-none shadow-xl shadow-primary/10">
+                    <p className="text-primary/60 text-[9px] font-bold uppercase tracking-[0.2em] mb-4">Total Active Base</p>
+                    <div className="flex items-end gap-2">
+                        <h3 className="text-4xl font-bold tracking-tighter text-text leading-none">{stats?.active || 0}</h3>
+                        <span className="text-[10px] font-bold text-text/40 mb-1 ml-2">/ {stats?.total || 0} Total</span>
+                    </div>
+                </Card>
+
+                <Card>
+                    <p className="text-text/30 text-[9px] font-bold uppercase tracking-[0.2em] mb-4">New This Week</p>
+                    <div className="flex items-end gap-2">
+                        <h3 className="text-3xl font-bold tracking-tighter text-text leading-none">{stats?.newThisWeek || 0}</h3>
+                        <span className="text-[11px] font-bold text-success mb-1 ml-2">↑ Growth</span>
+                    </div>
+                </Card>
+
+                <Card>
+                    <p className="text-text/30 text-[9px] font-bold uppercase tracking-[0.2em] mb-4">Expiring Soon (7d)</p>
+                    <div className="flex items-end gap-2">
+                        <h3 className="text-3xl font-bold tracking-tighter text-text leading-none">{stats?.expiringSoon || 0}</h3>
+                        <span className="text-[11px] font-bold text-error mb-1 ml-2">Action needed</span>
+                    </div>
+                </Card>
             </div>
 
             {/* Tactical Search Interface */}
