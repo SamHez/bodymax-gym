@@ -6,15 +6,15 @@ import { cn } from '../lib/utils';
 import { useAttendance, useMembers, useFinance } from '../lib/data-hooks';
 
 export function DashboardSnapshot() {
-    const { todayCount } = useAttendance();
-    const { count: memberCount } = useMembers({ countOnly: true });
+    const { todayCount, liveGrowth } = useAttendance();
+    const { count: memberCount, stats: memberStats } = useMembers();
     const { stats: financeStats } = useFinance();
     const fStats = financeStats || { revenue: 0, mobileRevenue: 0, cashRevenue: 0, monthlyData: [] };
 
     const stats = [
-        { label: "Active Traffic", value: (todayCount || 0).toString(), trend: 0, icon: Users },
+        { label: "Active Traffic", value: (todayCount || 0).toString(), trend: liveGrowth, icon: Users },
         { label: "Daily Revenue", value: `${((fStats.revenue || 0) / 1000).toFixed(1)}k`, trend: 0, icon: TrendingUp, colorClass: "text-accent" },
-        { label: "Total Members", value: (memberCount || 0).toString(), trend: 0, icon: UserPlus },
+        { label: "Total Members", value: (memberCount || 0).toString(), trend: memberStats?.growthPercentage || 0, icon: UserPlus },
         { label: "Renewals", value: "2", trend: 0, icon: RefreshCw },
     ];
 

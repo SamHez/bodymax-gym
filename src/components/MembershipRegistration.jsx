@@ -9,6 +9,7 @@ export function MembershipRegistration({ onComplete, onCancel }) {
     const [formData, setFormData] = useState({
         fullName: '',
         phone: '',
+        startDate: new Date().toISOString().split('T')[0],
         category: 'Normal Membership',
         duration: 'Monthly',
         paymentMethod: 'Cash',
@@ -21,7 +22,7 @@ export function MembershipRegistration({ onComplete, onCancel }) {
     const categories = [
         { name: 'Normal Membership', price: 30000, desc: 'Comprehensive Gym Access' },
         { name: 'Group Membership', price: 20000, desc: 'Corporate / Linked Tier' },
-        { name: 'Daily Pass', price: 5000, desc: 'Single Entry' },
+        { name: 'Daily Pass', price: 3000, desc: 'Single Entry' },
     ];
 
     const durations = [
@@ -39,14 +40,29 @@ export function MembershipRegistration({ onComplete, onCancel }) {
 
     const calculatePrice = () => {
         const base = categories.find(c => c.name === formData.category)?.price || 0;
-        const duration = durations.find(d => d.name === formData.duration);
-
+        
         let price = base;
-        if (formData.duration === 'Weekly') price = Math.round(base / 4); // Adjusted logic
-        else if (formData.duration === '3 Months') price = (base * 3) * (1 - duration.discount / 100);
-        else if (formData.duration === 'Annual') price = (base * 12) * (1 - duration.discount / 100);
+        if (formData.category !== 'Daily Pass') {
+            const duration = durations.find(d => d.name === formData.duration);
+            if (formData.duration === 'Weekly') price = Math.round(base / 4);
+            else if (formData.duration === '3 Months') price = (base * 3) * (1 - duration.discount / 100);
+            else if (formData.duration === 'Annual') price = (base * 12) * (1 - duration.discount / 100);
+        }
 
         return price.toLocaleString();
+    };
+
+    const calculateExpiryDate = () => {
+        let expiry = new Date(formData.startDate || new Date());
+        if (formData.category === 'Daily Pass') {
+            expiry.setDate(expiry.getDate() + 1);
+        } else {
+            if (formData.duration === 'Weekly') expiry.setDate(expiry.getDate() + 7);
+            else if (formData.duration === 'Monthly') expiry.setMonth(expiry.getMonth() + 1);
+            else if (formData.duration === '3 Months') expiry.setMonth(expiry.getMonth() + 3);
+            else if (formData.duration === 'Annual') expiry.setFullYear(expiry.getFullYear() + 1);
+        }
+        return expiry.toISOString().split('T')[0];
     };
 
     const handlePictureChange = (e) => {
@@ -61,7 +77,7 @@ export function MembershipRegistration({ onComplete, onCancel }) {
     };
 
     const handleSubmit = () => {
-        if (!formData.fullName || !formData.phone || !formData.branchCode) {
+        if (!formData.fullName || !formData.startDate) {
             showToast("Please fill in all required fields.", "error");
             return;
         }
@@ -143,7 +159,7 @@ export function MembershipRegistration({ onComplete, onCancel }) {
                                 </div>
                                 <div className="space-y-3">
                                     <label className="text-[10px] font-bold text-text/30 uppercase tracking-[0.3em] ml-2 flex items-center gap-2">
-                                        <Phone size={14} className="text-accent" /> Identification Phone *
+                                        <Phone size={14} className="text-accent" /> Identification Phone
                                     </label>
                                     <input
                                         type="tel"
@@ -156,25 +172,28 @@ export function MembershipRegistration({ onComplete, onCancel }) {
                             </div>
                         </div>
 
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-bold text-text/30 uppercase tracking-[0.3em] ml-2 flex items-center gap-2">
-                                <MapPin size={14} className="text-accent" /> Branch Assignment *
-                            </label>
-                            <div className="grid grid-cols-3 gap-4">
-                                {branches.map(b => (
-                                    <button
-                                        key={b.code}
-                                        onClick={() => setFormData({ ...formData, branchCode: b.code })}
-                                        className={cn(
-                                            "py-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest border transition-all",
-                                            formData.branchCode === b.code
-                                                ? "bg-primary/10 border-primary text-primary shadow-premium"
-                                                : "bg-surface border-text/5 text-text/20 hover:text-text/40"
-                                        )}
-                                    >
-                                        {b.name} ({b.code})
-                                    </button>
-                                ))}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-bold text-text/30 uppercase tracking-[0.3em] ml-2 flex items-center gap-2">
+                                    <Calendar size={14} className="text-accent" /> Registration Date *
+                                </label>
+                                <input
+                                    type="date"
+                                    className="glass-input w-full py-5 px-8 rounded-[2rem] font-bold text-lg uppercase"
+                                    value={formData.startDate}
+                                    onChange={e => setFormData({ ...formData, startDate: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-bold text-text/30 uppercase tracking-[0.3em] ml-2 flex items-center gap-2">
+                                    <Shield size={14} className="text-primary" /> Auto-Expiry Date
+                                </label>
+                                <input
+                                    type="text"
+                                    readOnly
+                                    className="glass-input w-full py-5 px-8 rounded-[2rem] font-bold text-lg uppercase text-text/50 bg-black/5"
+                                    value={calculateExpiryDate()}
+                                />
                             </div>
                         </div>
                     </Card>
@@ -202,25 +221,27 @@ export function MembershipRegistration({ onComplete, onCancel }) {
                             </div>
                         </div>
 
-                        <div className="space-y-6">
-                            <label className="text-[10px] font-bold text-text/30 uppercase tracking-[0.4em] ml-2 block">Commitment Window</label>
-                            <div className="flex flex-wrap gap-4">
-                                {durations.map(d => (
-                                    <button
-                                        key={d.name}
-                                        onClick={() => setFormData({ ...formData, duration: d.name })}
-                                        className={cn(
-                                            "px-8 py-4 rounded-2xl text-[10px] font-bold transition-all uppercase tracking-[0.2em]",
-                                            formData.duration === d.name
-                                                ? "bg-primary text-white shadow-premium"
-                                                : "bg-surface border-2 border-text/5 text-text/30 hover:text-text/60"
-                                        )}
-                                    >
-                                        {d.name} {d.discount > 0 && <span className="ml-2 text-[9px] text-accent">-{d.discount}%</span>}
-                                    </button>
-                                ))}
+                        {formData.category !== 'Daily Pass' && (
+                            <div className="space-y-6">
+                                <label className="text-[10px] font-bold text-text/30 uppercase tracking-[0.4em] ml-2 block">Commitment Window</label>
+                                <div className="flex flex-wrap gap-4">
+                                    {durations.map(d => (
+                                        <button
+                                            key={d.name}
+                                            onClick={() => setFormData({ ...formData, duration: d.name })}
+                                            className={cn(
+                                                "px-8 py-4 rounded-2xl text-[10px] font-bold transition-all uppercase tracking-[0.2em]",
+                                                formData.duration === d.name
+                                                    ? "bg-primary text-white shadow-premium"
+                                                    : "bg-surface border-2 border-text/5 text-text/30 hover:text-text/60"
+                                            )}
+                                        >
+                                            {d.name} {d.discount > 0 && <span className="ml-2 text-[9px] text-accent">-{d.discount}%</span>}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </Card>
                 </div>
 
@@ -265,7 +286,7 @@ export function MembershipRegistration({ onComplete, onCancel }) {
 
                         <button
                             onClick={handleSubmit}
-                            disabled={!formData.fullName || !formData.phone}
+                            disabled={!formData.fullName || !formData.startDate}
                             className="w-full bg-primary text-white font-bold py-7 rounded-[2.5rem] shadow-premium flex items-center justify-center gap-4 active:scale-95 transition-all uppercase tracking-[0.25em] text-sm group disabled:opacity-20"
                         >
                             AUTHORIZE <Check size={24} strokeWidth={4} className="group-hover:rotate-12 transition-transform" />

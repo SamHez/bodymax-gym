@@ -92,6 +92,16 @@ export function AttendanceTracking() {
         }
     };
 
+    const yesterdayDateStr = new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().split('T')[0];
+    const yesterdayCount = historicalData?.daily?.find(d => d.date === yesterdayDateStr)?.count || 0;
+    
+    let liveGrowth = 0;
+    if (yesterdayCount > 0) {
+        liveGrowth = Math.round(((todayCount - yesterdayCount) / yesterdayCount) * 100);
+    } else if (todayCount > 0) {
+        liveGrowth = 100; // Infinity edge case placeholder
+    }
+
     return (
         <div className="space-y-10 max-w-5xl mx-auto">
             {/* Header */}
@@ -118,9 +128,9 @@ export function AttendanceTracking() {
                         <h3 className="text-4xl font-bold tracking-tighter text-text leading-none">{todayCount}</h3>
                         <span className={cn(
                             "text-[10px] font-bold mb-1 ml-2",
-                            historicalData?.growth > 0 ? "text-success" : historicalData?.growth < 0 ? "text-error" : "text-text/40"
+                            liveGrowth > 0 ? "text-success" : liveGrowth < 0 ? "text-error" : "text-text/40"
                         )}>
-                            {historicalData?.growth > 0 ? '↑' : historicalData?.growth < 0 ? '↓' : ''} {Math.abs(historicalData?.growth || 0)}%
+                            {liveGrowth > 0 ? '↑' : liveGrowth < 0 ? '↓' : ''} {Math.abs(liveGrowth)}%
                         </span>
                     </div>
                 </Card>

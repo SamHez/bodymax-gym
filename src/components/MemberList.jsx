@@ -9,16 +9,18 @@ import { ConfirmationModal } from './ConfirmationModal';
 
 export function MemberList({ onAddMember, onEditMember }) {
     const [search, setSearch] = useState('');
+    const [statusFilter, setStatusFilter] = useState('All');
     const { members, loading, deleteMember, stats } = useMembers();
     const [selectedMember, setSelectedMember] = useState(null);
     const [menuOpenId, setMenuOpenId] = useState(null);
     const [memberToDelete, setMemberToDelete] = useState(null);
     const [deleting, setDeleting] = useState(false);
 
-    const filteredMembers = members.filter(m =>
-        m.full_name?.toLowerCase().includes(search.toLowerCase()) ||
-        m.phone?.toLowerCase().includes(search.toLowerCase())
-    );
+    const filteredMembers = members.filter(m => {
+        const matchesSearch = m.full_name?.toLowerCase().includes(search.toLowerCase()) || m.phone?.toLowerCase().includes(search.toLowerCase());
+        const matchesStatus = statusFilter === 'All' || m.status === statusFilter;
+        return matchesSearch && matchesStatus;
+    });
 
     const handleDeleteRequest = (id, e) => {
         if (e) e.stopPropagation();
@@ -75,7 +77,12 @@ export function MemberList({ onAddMember, onEditMember }) {
                     <p className="text-text/30 text-[9px] font-bold uppercase tracking-[0.2em] mb-4">New This Week</p>
                     <div className="flex items-end gap-2">
                         <h3 className="text-3xl font-bold tracking-tighter text-text leading-none">{stats?.newThisWeek || 0}</h3>
-                        <span className="text-[11px] font-bold text-success mb-1 ml-2">↑ Growth</span>
+                        <span className={cn(
+                            "text-[11px] font-bold mb-1 ml-2",
+                            (stats?.growthPercentage || 0) >= 0 ? "text-success" : "text-error"
+                        )}>
+                            {(stats?.growthPercentage || 0) >= 0 ? '↑' : '↓'} {Math.abs(stats?.growthPercentage || 0)}%
+                        </span>
                     </div>
                 </Card>
 
@@ -89,8 +96,8 @@ export function MemberList({ onAddMember, onEditMember }) {
             </div>
 
             {/* Tactical Search Interface */}
-            <Card className="p-2 border border-text/5 shadow-premium group">
-                <div className="relative">
+            <Card className="p-2 border border-text/5 shadow-premium flex flex-col md:flex-row gap-2">
+                <div className="relative flex-1 group">
                     <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-text/20 group-focus-within:text-primary transition-colors w-4 h-4" strokeWidth={2.5} />
                     <input
                         type="text"
@@ -99,6 +106,19 @@ export function MemberList({ onAddMember, onEditMember }) {
                         value={search}
                         onChange={e => setSearch(e.target.value)}
                     />
+                </div>
+                <div className="relative w-full md:w-64">
+                    <Filter className="absolute left-6 top-1/2 -translate-y-1/2 text-text/20 w-4 h-4 z-10 pointer-events-none" />
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="w-full bg-surface/50 border-none rounded-[1.5rem] py-3 pl-14 pr-10 text-text font-bold text-[11px] focus:ring-4 focus:ring-primary/10 transition-all font-sans uppercase tracking-[0.2em] outline-none appearance-none cursor-pointer hover:bg-surface"
+                    >
+                        <option value="All">All Entities</option>
+                        <option value="Active">Active</option>
+                        <option value="Expiring Soon">Expiring Soon</option>
+                        <option value="Expired">Expired</option>
+                    </select>
                 </div>
             </Card>
 

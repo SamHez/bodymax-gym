@@ -11,6 +11,7 @@ export function FrontDeskDashboard({ onNavigate }) {
     const [search, setSearch] = useState('');
     const {
         todayCount,
+        liveGrowth,
         checkedInIds,
         historicalData,
         loading: attendanceLoading,
@@ -143,8 +144,8 @@ export function FrontDeskDashboard({ onNavigate }) {
     const fStats = financeStats || { todayRevenue: 0, todayExpenses: 0, recentTransactions: [], dailyData: [] };
 
     const quickStats = [
-        { label: "Today's Attendance", value: (todayCount || 0).toString(), icon: Users, trend: 0 },
-        { label: "Total Members", value: (memberCount || 0).toString(), icon: UserPlus, trend: 0 },
+        { label: "Today's Attendance", value: (todayCount || 0).toString(), icon: Users, trend: liveGrowth },
+        { label: "Total Members", value: (memberCount || 0).toString(), icon: UserPlus, trend: expiredCount ? -1 : 0, trendLabel: expiredCount ? `${expiredCount} Expired` : undefined },
         { label: "Today's Net Balance", value: `RWF ${Math.abs((fStats.todayRevenue || 0) - (fStats.todayExpenses || 0)).toLocaleString()}`, icon: Activity, trend: ((fStats.todayRevenue || 0) - (fStats.todayExpenses || 0)) >= 0 ? 1 : -1 },
     ];
 

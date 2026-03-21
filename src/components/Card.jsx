@@ -15,7 +15,7 @@ export function Card({ children, className, title, subtitle, ...props }) {
     );
 }
 
-export function StatCard({ label, value, trend, icon: Icon, colorClass = "text-text", featured = false }) {
+export function StatCard({ label, value, trend, trendLabel, icon: Icon, colorClass = "text-text", featured = false }) {
     return (
         <Card className={cn(
             "flex flex-col justify-between min-h-[140px] group hover:scale-[1.02] transition-all duration-500 relative overflow-hidden",
@@ -33,12 +33,12 @@ export function StatCard({ label, value, trend, icon: Icon, colorClass = "text-t
                 )}>
                     {Icon && <Icon size={featured ? 22 : 20} strokeWidth={2.5} />}
                 </div>
-                {trend && (
+                {trend !== undefined && trend !== null && trend !== 0 && (
                     <span className={cn(
                         "text-[9px] font-bold px-2 py-0.5 rounded-lg shadow-sm border",
                         trend > 0 ? "bg-success/10 text-success border-success/20" : "bg-error/10 text-error border-error/20"
                     )}>
-                        {trend > 0 ? '↑' : '↓'} {Math.abs(trend)}%
+                        {trend > 0 ? '↑' : '↓'} {trendLabel ? trendLabel : `${Math.abs(trend)}%`}
                     </span>
                 )}
             </div>

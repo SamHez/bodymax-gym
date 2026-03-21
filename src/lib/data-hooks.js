@@ -103,7 +103,9 @@ export function useMembers(options = {}) {
         total: 0,
         newThisWeek: 0,
         expiringSoon: 0,
-        active: 0
+        active: 0,
+        expired: 0,
+        growthPercentage: 0
     });
 
     const fetchMembers = useCallback(async ({ force = false } = {}) => {
@@ -180,50 +182,68 @@ export function useMembers(options = {}) {
         }
 
         if (data) {
-            // Reconcile Statuses based on expiry_date
+            // Reconcile Statuses locally for immediate UI update
             const today = new Date().toISOString().split('T')[0];
             const sevenDaysFromNow = new Date();
             sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
             const sevenDaysStr = sevenDaysFromNow.toISOString().split('T')[0];
 
-            let needsRefresh = false;
-            const toExpire = data.filter(m => m.expiry_date < today && m.status !== 'Expired');
-            const toExpiringSoon = data.filter(m => m.expiry_date >= today && m.expiry_date <= sevenDaysStr && m.status !== 'Expiring Soon');
-            const toActive = data.filter(m => m.expiry_date > sevenDaysStr && m.status !== 'Active');
+            let reconciliations = [];
+            const reconciledData = data.map(m => {
+                let newStatus = m.status;
+                if (m.expiry_date < today && m.status !== 'Expired') newStatus = 'Expired';
+                else if (m.expiry_date >= today && m.expiry_date <= sevenDaysStr && m.status !== 'Expiring Soon') newStatus = 'Expiring Soon';
+                else if (m.expiry_date > sevenDaysStr && m.status !== 'Active') newStatus = 'Active';
 
-            if (toExpire.length > 0) {
-                await supabase.from('members').update({ status: 'Expired' }).in('id', toExpire.map(m => m.id));
-                needsRefresh = true;
-            }
-            if (toExpiringSoon.length > 0) {
-                await supabase.from('members').update({ status: 'Expiring Soon' }).in('id', toExpiringSoon.map(m => m.id));
-                needsRefresh = true;
-            }
-            if (toActive.length > 0) {
-                await supabase.from('members').update({ status: 'Active' }).in('id', toActive.map(m => m.id));
-                needsRefresh = true;
+                if (newStatus !== m.status) {
+                    reconciliations.push({ id: m.id, status: newStatus });
+                    return { ...m, status: newStatus };
+                }
+                return m;
+            });
+
+            // Fire and forget individual or batch updates in background if needed
+            if (reconciliations.length > 0) {
+                const expiredIds = reconciliations.filter(r => r.status === 'Expired').map(r => r.id);
+                const expiringSoonIds = reconciliations.filter(r => r.status === 'Expiring Soon').map(r => r.id);
+                const activeIds = reconciliations.filter(r => r.status === 'Active').map(r => r.id);
+
+                Promise.all([
+                    expiredIds.length > 0 && supabase.from('members').update({ status: 'Expired' }).in('id', expiredIds),
+                    expiringSoonIds.length > 0 && supabase.from('members').update({ status: 'Expiring Soon' }).in('id', expiringSoonIds),
+                    activeIds.length > 0 && supabase.from('members').update({ status: 'Active' }).in('id', activeIds)
+                ]).catch(err => console.error("Background Reconciliation Error:", err));
             }
 
-            if (needsRefresh && !isSearchQuery) {
-                // Fetch again to get updated statuses for cache
-                return fetchMembers({ force: true });
-            }
+            const activeData = reconciledData;
 
             // Calculate Stats for Summary Cards
-            const weekAgo = new Date();
-            weekAgo.setDate(weekAgo.getDate() - 7);
+            const now = new Date();
+            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+            
             const weekAgoStr = weekAgo.toISOString();
+            const twoWeeksAgoStr = twoWeeksAgo.toISOString();
 
             const newThisWeekCount = data.filter(m => m.created_at >= weekAgoStr).length;
+            const newLastWeekCount = data.filter(m => m.created_at >= twoWeeksAgoStr && m.created_at < weekAgoStr).length;
+            
+            const growthPercentage = newLastWeekCount > 0 
+                ? Math.round(((newThisWeekCount - newLastWeekCount) / newLastWeekCount) * 100) 
+                : (newThisWeekCount > 0 ? 100 : 0);
+
             const expiringSoonCount = data.filter(m => m.status === 'Expiring Soon').length;
             const activeCount = data.filter(m => m.status === 'Active').length;
+            const expiredCount = data.filter(m => m.status === 'Expired').length;
 
             setMembers(data);
             setStats({
                 total: data.length,
                 newThisWeek: newThisWeekCount,
                 expiringSoon: expiringSoonCount,
-                active: activeCount
+                active: activeCount,
+                expired: expiredCount,
+                growthPercentage
             });
 
             if (!isSearchQuery) {
@@ -390,7 +410,7 @@ export function useAttendance() {
                 const monthName = pd.toLocaleDateString('en-US', { month: 'short' });
                 const d = pd.getDate();
                 const suffix = ["th", "st", "nd", "rd"][(d % 10 > 3 || Math.floor(d % 100 / 10) === 1) ? 0 : d % 10];
-                peakDay = `${d}${suffix} ${dayName} `;
+                peakDay = `${d}${suffix} ${dayName}`;
             }
 
             // Average Daily Attendance
@@ -412,12 +432,20 @@ export function useAttendance() {
                 peakHour,
                 peakDay,
                 avgDaily,
-                growth,
+                yesterdayCount: yesterdayCountVal,
                 total: data.length
             });
         }
         setLoadingHistory(false);
     }, []);
+
+    const liveGrowth = (() => {
+        const yesterdayCount = historicalData?.yesterdayCount || 0;
+        if (yesterdayCount > 0) {
+            return Math.round(((todayCount - yesterdayCount) / yesterdayCount) * 100);
+        }
+        return todayCount > 0 ? 100 : 0;
+    })();
 
     useEffect(() => {
         fetchAttendance();
@@ -465,6 +493,7 @@ export function useAttendance() {
         todayCount,
         checkedInIds,
         historicalData,
+        liveGrowth,
         loading,
         loadingHistory,
         checkIn,
