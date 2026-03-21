@@ -8,6 +8,7 @@ import { useAttendance, useMembers, useFinance } from '../lib/data-hooks';
 export function DashboardSnapshot() {
     const { todayCount } = useAttendance();
     const { count: memberCount } = useMembers({ countOnly: true });
+    const { stats: financeStats } = useFinance();
     const fStats = financeStats || { revenue: 0, mobileRevenue: 0, cashRevenue: 0, monthlyData: [] };
 
     const stats = [
