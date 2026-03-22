@@ -18,7 +18,7 @@ import { useTheme } from './lib/useTheme';
 import { cn } from './lib/utils';
 import { supabase } from './lib/supabase';
 import { useToast } from './context/ToastContext';
-import { useFinance } from './lib/data-hooks';
+import { useFinanceActions } from './lib/data-hooks';
 
 function App() {
   const { showToast } = useToast();
@@ -28,7 +28,7 @@ function App() {
   const [editingMember, setEditingMember] = useState(null);
   const [incomeModal, setIncomeModal] = useState({ isOpen: false, type: 'Selling Water' });
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const { recordIncome } = useFinance();
+  const { recordIncome } = useFinanceActions();
   const navigate = useNavigate();
   const location = useLocation();
 

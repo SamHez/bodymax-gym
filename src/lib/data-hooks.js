@@ -783,21 +783,26 @@ export function useFinance() {
         fetchFinance();
     }, [fetchFinance]);
 
+    return { stats, loading, refresh: () => fetchFinance({ force: true }) };
+}
+
+export function useFinanceActions() {
     const recordIncome = async (income) => {
-        const { data, error } = await supabase
+        const { error } = await supabase
             .from('payments')
             .insert([{
                 ...income,
                 transaction_date: new Date().toISOString()
-            }])
-            .select();
+            }]);
 
         if (!error) {
-            fetchFinance({ force: true });
+            financeCache = null;
+            financeCacheAt = 0;
             return true;
         }
+
         return false;
     };
 
-    return { stats, loading, recordIncome, refresh: () => fetchFinance({ force: true }) };
+    return { recordIncome };
 }

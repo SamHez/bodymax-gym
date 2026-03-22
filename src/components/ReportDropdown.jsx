@@ -5,7 +5,7 @@ import { useToast } from '../context/ToastContext';
 import { ReportConfigModal } from './ReportConfigModal';
 import { ReportService } from '../lib/ReportService';
 
-export function ReportDropdown() {
+export function ReportDropdown({ customVariant }) {
     const [isOpen, setIsOpen] = useState(false);
     const [modalOpen, setModalOpen] = useState(false);
     const [reportType, setReportType] = useState('PDF');
@@ -44,18 +44,26 @@ export function ReportDropdown() {
         } catch (error) {
             console.error("Report Error:", error);
             showToast('Failed to generate report. Check console.', 'error');
-            throw error; // Let modal stay open/show loading state failure if needed
+            throw error;
         }
     };
 
+    const isMobileMenu = customVariant === 'mobile-transparent';
+
     return (
-        <div className="relative shrink-0" ref={dropdownRef}>
+        <div className={cn("relative shrink-0", isMobileMenu && "w-full")} ref={dropdownRef}>
             <button 
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-2 bg-text/5 text-text px-5 py-2.5 rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:bg-text/10 transition-all border border-text/5"
+                className={isMobileMenu 
+                    ? "w-full flex items-center justify-between px-2 py-1.5 text-[10px] font-bold uppercase tracking-widest text-text/70 hover:text-text hover:bg-card transition-all rounded-xl"
+                    : "flex items-center gap-2 bg-text/5 text-text px-5 py-2.5 rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:bg-text/10 transition-all border border-text/5"
+                }
             >
-                <TrendingUp size={14} strokeWidth={3} /> 
-                Generate Report
+                <div className="flex items-center gap-2">
+                    <TrendingUp size={14} strokeWidth={isMobileMenu ? 2.5 : 3} className={isMobileMenu ? "text-text" : ""} /> 
+                    Generate Report
+                </div>
+                {isMobileMenu && <ChevronRight size={14} className={cn("transition-transform opacity-50", isOpen && "rotate-90")} />}
             </button>
             
             {isOpen && (

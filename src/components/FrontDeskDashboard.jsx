@@ -10,6 +10,20 @@ import { ReportDropdown } from './ReportDropdown';
 export function FrontDeskDashboard({ onNavigate }) {
     const { showToast } = useToast();
     const [search, setSearch] = useState('');
+    const [searchOpen, setSearchOpen] = useState(false);
+    const [actionsOpen, setActionsOpen] = useState(false);
+    const searchRef = React.useRef(null);
+    const actionsRef = React.useRef(null);
+    
+    useEffect(() => {
+        const handler = (e) => {
+            if (actionsRef.current && !actionsRef.current.contains(e.target)) setActionsOpen(false);
+            if (searchRef.current && !searchRef.current.contains(e.target)) setSearchOpen(false);
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, []);
+
     const {
         todayCount,
         liveGrowth,
@@ -152,32 +166,124 @@ export function FrontDeskDashboard({ onNavigate }) {
 
     return (
         <div className="space-y-7">
-            {/* Action Header — compact */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <p className="text-accent text-[10px] font-bold uppercase tracking-[0.3em] leading-none">Front Desk</p>
-                    <h2 className="text-text text-[25px] font-bold tracking-tighter leading-tight uppercase">Dashboard</h2>
+            {/* Action Header — desktop & generic mobile title */}
+            <div className="flex flex-col gap-5">
+                {/* Desktop: Title + Buttons. Mobile: Just Title */}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <p className="text-accent text-[10px] font-bold uppercase tracking-[0.3em] leading-none mb-1">Front Desk</p>
+                        <h2 className="text-text text-[25px] font-bold tracking-tighter leading-tight uppercase">Dashboard</h2>
+                    </div>
+                    
+                    {/* Desktop Actions */}
+                    <div className="hidden lg:flex flex-wrap items-center gap-2 justify-end">
+                        <ReportDropdown />
+                        <button
+                            onClick={() => onNavigate('attendance')}
+                            className="flex items-center gap-2 bg-text/5 text-text px-4 py-2 rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:bg-text/10 transition-all border border-text/5"
+                        >
+                            <Calendar size={14} strokeWidth={2.5} /> Check-in
+                        </button>
+                        <button
+                            onClick={() => onNavigate('expenses')}
+                            className="flex items-center gap-2 bg-text/5 text-text px-4 py-2 rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:bg-text/10 transition-all border border-text/5"
+                        >
+                            <Receipt size={14} strokeWidth={2.5} /> Log Expense
+                        </button>
+                        <button
+                            onClick={() => onNavigate('members', 'register')}
+                            className="flex items-center gap-2 bg-primary text-surface px-4 py-2 rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20"
+                        >
+                            <Plus size={14} strokeWidth={3} /> New Member
+                        </button>
+                    </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-2 justify-end">
-                    <ReportDropdown />
-                    <button
-                        onClick={() => onNavigate('attendance')}
-                        className="flex items-center gap-2 bg-text/5 text-text px-4 py-2 rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:bg-text/10 transition-all border border-text/5"
-                    >
-                        <Calendar size={14} strokeWidth={2.5} /> Check-in
-                    </button>
-                    <button
-                        onClick={() => onNavigate('expenses')}
-                        className="flex items-center gap-2 bg-text/5 text-text px-4 py-2 rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:bg-text/10 transition-all border border-text/5"
-                    >
-                        <Receipt size={14} strokeWidth={2.5} /> Log Expense
-                    </button>
-                    <button
-                        onClick={() => onNavigate('members', 'register')}
-                        className="flex items-center gap-2 bg-primary text-surface px-4 py-2 rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20"
-                    >
-                        <Plus size={14} strokeWidth={3} /> New Member
-                    </button>
+
+                {/* Mobile Specific Actions: Search Bar + '+' Dropdown */}
+                <div className="flex lg:hidden items-center gap-3">
+                    {/* Wide Search Bar */}
+                    <div ref={searchRef} className="flex-1 relative">
+                        <div className="relative group">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text/30 group-focus-within:text-accent transition-colors" size={15} />
+                            <input
+                                type="text"
+                                placeholder="Search members..."
+                                className="w-full bg-card shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-text/5 rounded-2xl py-2.5 pl-10 pr-4 text-[11px] font-bold uppercase tracking-widest focus:outline-none focus:border-accent/40 focus:ring-2 focus:ring-accent/10 transition-all"
+                                value={search}
+                                onChange={(e) => { setSearch(e.target.value); setSearchOpen(true); }}
+                                onFocus={() => setSearchOpen(true)}
+                            />
+                        </div>
+                        {/* Search dropdown */}
+                        {searchOpen && search.trim() !== '' && (
+                            <div className="absolute top-full mt-2 left-0 right-0 bg-card border border-text/5 rounded-2xl shadow-xl overflow-hidden z-50 divide-y divide-text/5">
+                                {searchLoading ? (
+                                    <div className="p-4 text-center text-text/30 text-[10px] font-bold uppercase tracking-widest">Searching...</div>
+                                ) : searchResults.length === 0 ? (
+                                    <div className="p-4 text-center text-text/20 text-[10px] font-bold uppercase tracking-widest">No members found</div>
+                                ) : searchResults.map(member => (
+                                    <div key={member.id} className="flex items-center justify-between px-4 py-3 hover:bg-surface transition-colors">
+                                        <div>
+                                            <p className="text-text font-bold text-xs uppercase">{member.full_name}</p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            {member.status !== 'Expired' && (
+                                                <button
+                                                    onClick={() => handleCheckIn(member.id)}
+                                                    className={cn(
+                                                        "p-1.5 rounded-lg transition-colors",
+                                                        checkedInIds.includes(member.id)
+                                                            ? "bg-success text-white hover:bg-error"
+                                                            : "bg-primary text-white hover:bg-accent"
+                                                    )}
+                                                >
+                                                    <CheckCircle2 size={11} strokeWidth={3} />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* '+' Dropdown */}
+                    <div ref={actionsRef} className="relative shrink-0">
+                        <button
+                            onClick={() => setActionsOpen(!actionsOpen)}
+                            className="w-11 h-11 flex items-center justify-center bg-primary text-white rounded-2xl shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+                        >
+                            <Plus size={20} strokeWidth={3} className={cn("transition-transform duration-300", actionsOpen && "rotate-45")} />
+                        </button>
+                        
+                        {actionsOpen && (
+                            <div className="absolute top-[calc(100%+0.5rem)] right-0 w-52 bg-card border border-text/5 rounded-2xl shadow-xl overflow-visible z-50 divide-y divide-text/5 animate-in fade-in slide-in-from-top-2">
+                                <button
+                                    onClick={() => { onNavigate('attendance'); setActionsOpen(false); }}
+                                    className="w-full flex items-center gap-3 px-4 py-3.5 text-[10px] font-bold uppercase tracking-widest text-text/70 hover:text-text hover:bg-surface transition-all rounded-t-2xl"
+                                >
+                                    <Calendar size={13} strokeWidth={2.5} className="text-primary" /> Check-in
+                                </button>
+                                <button
+                                    onClick={() => { onNavigate('expenses'); setActionsOpen(false); }}
+                                    className="w-full flex items-center gap-3 px-4 py-3.5 text-[10px] font-bold uppercase tracking-widest text-text/70 hover:text-text hover:bg-surface transition-all"
+                                >
+                                    <Receipt size={13} strokeWidth={2.5} className="text-accent" /> Log Expense
+                                </button>
+                                <button
+                                    onClick={() => { onNavigate('members', 'register'); setActionsOpen(false); }}
+                                    className="w-full flex items-center gap-3 px-4 py-3.5 text-[10px] font-bold uppercase tracking-widest text-text/70 hover:text-text hover:bg-surface transition-all"
+                                >
+                                    <UserPlus size={13} strokeWidth={2.5} className="text-success" /> New Member
+                                </button>
+                                
+                                {/* Inject Report actions directly into dropdown since ReportDropdown mounts its own isolated modal scope */}
+                                <div className="p-2 bg-surface/50 rounded-b-2xl">
+                                    <ReportDropdown customVariant="mobile-transparent" />
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 

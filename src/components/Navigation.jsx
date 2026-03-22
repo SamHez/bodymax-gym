@@ -4,8 +4,7 @@ import {
     Users,
     UserCheck,
     CreditCard,
-    Activity,
-    User,
+    Menu,
     ChevronRight,
     Sun,
     Moon,
@@ -18,7 +17,8 @@ import {
     FileText,
     Download,
     Mail,
-    UserPlus
+    UserPlus,
+    X
 } from 'lucide-react';
 import { useTheme } from '../lib/useTheme';
 import logo from '../assets/logo.png';
@@ -27,32 +27,28 @@ import { cn } from '../lib/utils';
 import { NavLink } from 'react-router-dom';
 import { useMembers, useAttendance } from '../lib/data-hooks';
 
-export function Sidebar({ activeTab, user, onLogout, isCollapsed, onToggleCollapse }) {
-    const { theme, toggleTheme } = useTheme();
-
+function getTabsForUser(user) {
     const isManager = user?.role === 'manager' || user?.role === 'admin';
 
-    const tabsManager = [
-        { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', role: 'both' },
-        { id: 'finance', icon: CreditCard, label: 'Finance', path: '/finance', role: 'both' },
-        { id: 'expenses', icon: Receipt, label: 'Expenses', path: '/expenses', role: 'both' },
-        { id: 'members', icon: Users, label: 'Members', path: '/members', role: 'both' },
-        { id: 'attendance', icon: UserCheck, label: 'Attendance', path: '/attendance', role: 'both' },
-    ];
+    return isManager
+        ? [
+            { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+            { id: 'finance', icon: CreditCard, label: 'Finance', path: '/finance' },
+            { id: 'expenses', icon: Receipt, label: 'Expenses', path: '/expenses' },
+            { id: 'members', icon: Users, label: 'Members', path: '/members' },
+            { id: 'attendance', icon: UserCheck, label: 'Attendance', path: '/attendance' },
+        ]
+        : [
+            { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+            { id: 'attendance', icon: UserCheck, label: 'Attendance', path: '/attendance' },
+            { id: 'members', icon: Users, label: 'Members', path: '/members' },
+            { id: 'expenses', icon: Receipt, label: 'Expenses', path: '/expenses' },
+            { id: 'finance', icon: CreditCard, label: 'Finance', path: '/finance' },
+        ];
+}
 
-    const tabsFrontDesk = [
-        { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', role: 'both' },
-        { id: 'attendance', icon: UserCheck, label: 'Attendance', path: '/attendance', role: 'both' },
-        { id: 'members', icon: Users, label: 'Members', path: '/members', role: 'both' },
-        { id: 'expenses', icon: Receipt, label: 'Expenses', path: '/expenses', role: 'both' },
-        { id: 'finance', icon: CreditCard, label: 'Finance', path: '/finance', role: 'both' },
-    ];
-
-    const allTabs = isManager ? tabsManager : tabsFrontDesk;
-
-    const filteredTabs = allTabs.filter(tab =>
-        tab.role === 'both' || tab.role === user?.role
-    );
+export function Sidebar({ activeTab, user, onLogout, isCollapsed, onToggleCollapse }) {
+    const filteredTabs = getTabsForUser(user);
 
     return (
         <aside className={cn(
@@ -315,57 +311,89 @@ export function TopNav({ user, onLogout, isSidebarCollapsed, activeTab, onNaviga
 export function MobileHeader({ user, onLogout }) {
     const { theme, toggleTheme } = useTheme();
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+    const tabs = getTabsForUser(user);
 
     return (
-        <header className="fixed lg:hidden top-0 left-0 right-0 h-24 bg-surface/80 backdrop-blur-2xl border-b border-text/5 z-[60] px-6 flex justify-between items-center transition-all">
-            <div className="flex items-center gap-3">
-                <img src={logo} alt="BodyMax Gym" className="h-8 w-auto" />
-                <div className="h-5 w-[2px] bg-text/5" />
-                <h1 className="text-text font-bold text-lg tracking-tighter uppercase ">BodyMax</h1>
-            </div>
-
-            <div className="flex items-center gap-4">
+        <>
+            <header className="fixed lg:hidden top-0 left-0 right-0 h-20 bg-surface/85 backdrop-blur-2xl border-b border-text/5 z-[60] px-5 flex items-center justify-between transition-all">
                 <button
-                    onClick={toggleTheme}
-                    className="p-3 bg-card border border-text/5 rounded-2xl shadow-premium text-text/40"
+                    onClick={() => setIsMenuOpen(true)}
+                    className="w-11 h-11 rounded-2xl bg-card border border-text/5 shadow-premium text-text/50 flex items-center justify-center"
+                    aria-label="Open menu"
                 >
-                    {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+                    <Menu size={18} />
                 </button>
-                <div className="relative">
-                    <button
-                        onClick={() => setIsMenuOpen(!isMenuOpen)}
-                        className={cn(
-                            "relative p-3 bg-card border border-text/5 rounded-2xl shadow-premium transition-all",
-                            isMenuOpen ? "text-primary border-primary/20" : "text-text/40"
-                        )}
-                    >
-                        <User size={18} />
-                    </button>
 
-                    {isMenuOpen && (
-                        <>
-                            <div className="fixed inset-0 z-[-1]" onClick={() => setIsMenuOpen(false)} />
-                            <div className="absolute top-16 right-0 w-64 bg-card border border-text/5 rounded-[2rem] shadow-premium p-6 animate-in fade-in zoom-in-95 duration-200">
-                                <div className="flex items-center gap-4 mb-6">
-                                    <div className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center font-bold text-sm">
-                                        {user?.email?.[0].toUpperCase()}
-                                    </div>
-                                    <div className="overflow-hidden">
-                                        <p className="text-text font-bold text-xs tracking-tight truncate uppercase">{(user?.role === 'manager' || user?.role === 'admin') ? 'Manager' : 'Front Desk'}</p>
-                                        <p className="text-text/30 text-[9px] font-bold uppercase tracking-tighter truncate">{user?.email}</p>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={onLogout}
-                                    className="w-full flex items-center justify-center gap-3 py-4 bg-error/5 text-error border border-error/10 hover:bg-error hover:text-white rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all"
-                                >
-                                    <LogOut size={14} /> Sign Out
-                                </button>
-                            </div>
-                        </>
-                    )}
+                <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center">
+                    <img src={logo} alt="BodyMax Gym" className="h-9 w-auto" />
                 </div>
-            </div>
-        </header>
+
+                <div className="flex items-center gap-3 ml-auto">
+                    <button
+                        onClick={toggleTheme}
+                        className="w-11 h-11 rounded-2xl bg-card border border-text/5 shadow-premium text-text/40 flex items-center justify-center"
+                    >
+                        {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+                    </button>
+                </div>
+            </header>
+
+            {isMenuOpen && (
+                <div className="lg:hidden fixed inset-0 z-[100] isolate">
+                    {/* Dark Backdrop Overlay */}
+                    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)} />
+                    
+                    {/* Sidebar Drawer */}
+                    <aside className="fixed top-0 left-0 bottom-0 w-[82%] max-w-sm bg-surface border-r border-text/5 shadow-[20px_0_60px_rgba(0,0,0,0.15)] p-5 flex flex-col animate-in slide-in-from-left duration-300 overflow-y-auto">
+                        <div className="flex items-center justify-between mb-8 pb-4 border-b border-text/5 relative z-10">
+                            <div className="flex items-center gap-3">
+                                <img src={logo} alt="BodyMax Gym" className="h-9 w-auto" />
+                                <div className="overflow-hidden">
+                                    <p className="text-text font-black text-[10px] uppercase tracking-[0.2em]">
+                                        {(user?.role === 'manager' || user?.role === 'admin') ? 'Manager' : 'Front Desk'}
+                                    </p>
+                                    <p className="text-text/40 text-[9px] font-bold truncate tracking-widest uppercase">{user?.email}</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setIsMenuOpen(false)}
+                                className="w-10 h-10 rounded-2xl bg-card border border-text/5 shadow-sm hover:shadow-md text-text/40 hover:text-text hover:bg-surface flex items-center justify-center transition-all"
+                                aria-label="Close menu"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        <nav className="flex-1 space-y-2 relative z-10 pt-4">
+                            {tabs.map((tab) => {
+                                const Icon = tab.icon;
+
+                                return (
+                                    <NavLink
+                                        key={tab.id}
+                                        to={tab.path}
+                                        onClick={() => setIsMenuOpen(false)}
+                                        className={({ isActive }) => cn(
+                                            "flex items-center gap-4 px-5 py-4 rounded-2xl transition-all",
+                                            isActive ? "bg-primary text-white shadow-lg shadow-primary/20 scale-[0.98]" : "text-text/50 hover:bg-surface hover:text-text hover:scale-[0.98]"
+                                        )}
+                                    >
+                                        <Icon size={18} strokeWidth={2.5} />
+                                        <span className="font-bold text-[11px] uppercase tracking-[0.15em]">{tab.label}</span>
+                                    </NavLink>
+                                );
+                            })}
+                        </nav>
+
+                        <button
+                            onClick={onLogout}
+                            className="w-full flex items-center justify-center gap-3 py-4 bg-error/5 text-error border border-error/10 hover:bg-error hover:text-white rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all mt-6 shadow-sm relative z-10"
+                        >
+                            <LogOut size={14} /> Sign Out
+                        </button>
+                    </aside>
+                </div>
+            )}
+        </>
     );
 }
