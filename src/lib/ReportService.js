@@ -277,7 +277,7 @@ export const ReportService = {
         }
 
         try {
-            await emailjs.send(
+            const response = await emailjs.send(
                 serviceId,
                 templateId,
                 {
@@ -290,7 +290,9 @@ export const ReportService = {
             return true;
         } catch (error) {
             console.error("EmailJS Transmission Failed:", error);
-            throw new Error("Transmission failed. Please check your network and EmailJS configuration.");
+            // EmailJS provides detailed error info in error.text or error.message
+            const errorMsg = error.text || error.message || JSON.stringify(error) || "Unknown EmailJS Error";
+            throw new Error(`EmailJS Error: ${errorMsg}`);
         }
     }
 };
