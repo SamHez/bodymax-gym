@@ -2,9 +2,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { TrendingUp, ChevronRight, FileText, Download, Mail } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useToast } from '../context/ToastContext';
+import { ReportConfigModal } from './ReportConfigModal';
+import { ReportService } from '../lib/ReportService';
 
 export function ReportDropdown() {
     const [isOpen, setIsOpen] = useState(false);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [reportType, setReportType] = useState('PDF');
     const dropdownRef = useRef(null);
     const { showToast } = useToast();
 
@@ -20,8 +24,28 @@ export function ReportDropdown() {
     }, []);
 
     const handleAction = (type) => {
-        showToast(`Generating ${type} report...`, 'success');
+        setReportType(type);
+        setModalOpen(true);
         setIsOpen(false);
+    };
+
+    const executeGeneration = async (type, scope, email) => {
+        try {
+            if (type === 'PDF') {
+                await ReportService.generatePDF(scope);
+                showToast('PDF Report generated successfully!', 'success');
+            } else if (type === 'Excel') {
+                await ReportService.generateExcel(scope);
+                showToast('Excel Report generated successfully!', 'success');
+            } else if (type === 'Email') {
+                await ReportService.sendViaEmailJS(scope, email);
+                showToast('Report emailed successfully!', 'success');
+            }
+        } catch (error) {
+            console.error("Report Error:", error);
+            showToast('Failed to generate report. Check console.', 'error');
+            throw error; // Let modal stay open/show loading state failure if needed
+        }
     };
 
     return (
@@ -56,6 +80,13 @@ export function ReportDropdown() {
                     </button>
                 </div>
             )}
+
+            <ReportConfigModal 
+                isOpen={modalOpen} 
+                onClose={() => setModalOpen(false)} 
+                type={reportType} 
+                onGenerate={executeGeneration} 
+            />
         </div>
     );
 }
